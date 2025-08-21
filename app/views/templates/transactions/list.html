@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Transacciones - Finanzas Personales{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Transacciones</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('main.create_transaction') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Nueva Transacción
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="account_id" class="form-label">Cuenta</label>
+                <select class="form-select" id="account_id" name="account_id">
+                    <option value="">Todas las cuentas</option>
+                    {% for account in accounts %}
+                    <option value="{{ account.id }}" {% if request.args.get('account_id') == account.id|string %}selected{% endif %}>
+                        {{ account.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="transaction_type" class="form-label">Tipo</label>
+                <select class="form-select" id="transaction_type" name="transaction_type">
+                    <option value="">Todos los tipos</option>
+                    <option value="income" {% if request.args.get('transaction_type') == 'income' %}selected{% endif %}>Ingresos</option>
+                    <option value="expense" {% if request.args.get('transaction_type') == 'expense' %}selected{% endif %}>Gastos</option>
+                    <option value="transfer" {% if request.args.get('transaction_type') == 'transfer' %}selected{% endif %}>Transferencias</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="category" class="form-label">Categoría</label>
+                <select class="form-select" id="category" name="category">
+                    <option value="">Todas las categorías</option>
+                    <option value="food" {% if request.args.get('category') == 'food' %}selected{% endif %}>Alimentación</option>
+                    <option value="transport" {% if request.args.get('category') == 'transport' %}selected{% endif %}>Transporte</option>
+                    <option value="entertainment" {% if request.args.get('category') == 'entertainment' %}selected{% endif %}>Entretenimiento</option>
+                    <option value="utilities" {% if request.args.get('category') == 'utilities' %}selected{% endif %}>Servicios</option>
+                    <option value="healthcare" {% if request.args.get('category') == 'healthcare' %}selected{% endif %}>Salud</option>
+                    <option value="shopping" {% if request.args.get('category') == 'shopping' %}selected{% endif %}>Compras</option>
+                    <option value="salary" {% if request.args.get('category') == 'salary' %}selected{% endif %}>Salario</option>
+                    <option value="freelance" {% if request.args.get('category') == 'freelance' %}selected{% endif %}>Trabajos Independientes</option>
+                    <option value="debt_payment" {% if request.args.get('category') == 'debt_payment' %}selected{% endif %}>Pago de Deudas</option>
+                    <option value="other" {% if request.args.get('category') == 'other' %}selected{% endif %}>Otros</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="filter" class="form-label">&nbsp;</label>
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-filter me-1"></i>Filtrar
+                    </button>
+                    <a href="{{ url_for('main.transactions') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-1"></i>Limpiar
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if transactions %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Descripción</th>
+                        <th>Cuenta</th>
+                        <th>Categoría</th>
+                        <th>Tipo</th>
+                        <th class="text-end">Monto</th>
+                        <th width="120">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.date.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {{ transaction.description }}
+                            {% if transaction.is_debt_payment %}
+                                <br><small class="text-muted">Pago a: {{ transaction.creditor_name }}</small>
+                            {% endif %}
+                            {% if transaction.notes %}
+                                <br><small class="text-muted"><i class="fas fa-sticky-note me-1"></i>{{ transaction.notes }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if transaction.account %}
+                                {{ transaction.account.name }}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ transaction.get_category_display() }}</td>
+                        <td>
+                            <span class="badge {% if transaction.transaction_type == 'income' %}bg-success{% elif transaction.transaction_type == 'expense' %}bg-danger{% else %}bg-info{% endif %}">
+                                {{ transaction.get_type_display() }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <span class="{% if transaction.transaction_type == 'income' %}text-success{% elif transaction.transaction_type == 'expense' %}text-danger{% else %}text-info{% endif %}">
+                                {% if transaction.transaction_type == 'income' %}+{% elif transaction.transaction_type == 'expense' %}-{% endif %}${{ "%.2f"|format(transaction.amount) }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('main.edit_transaction', transaction_id=transaction.id) }}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger btn-sm"
+                                        onclick="deleteTransaction('{{ url_for('main.delete_transaction', transaction_id=transaction.id) }}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-receipt fa-4x text-muted mb-3"></i>
+    <h4 class="text-muted">No hay transacciones</h4>
+    <p class="text-muted">Registra tu primera transacción para comenzar</p>
+    <a href="{{ url_for('main.create_transaction') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Nueva Transacción
+    </a>
+</div>
+{% endif %}
+
+<script>
+function deleteTransaction(url) {
+    if (confirm('¿Estás seguro de eliminar esta transacción?')) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+{% endblock %}

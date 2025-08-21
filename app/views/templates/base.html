@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Finanzas Personales{% endblock %}</title>
+    
+    <!-- Material Design Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #1976d2;
+            --primary-dark: #1565c0;
+            --primary-light: #42a5f5;
+            --secondary-color: #424242;
+            --background-color: #fafafa;
+            --surface-color: #ffffff;
+            --error-color: #d32f2f;
+            --warning-color: #f57c00;
+            --success-color: #388e3c;
+            --info-color: #0288d1;
+            --text-primary: #212121;
+            --text-secondary: #757575;
+            --border-color: #e0e0e0;
+            --shadow-1: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-2: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+            --shadow-3: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+            --border-radius: 8px;
+            --border-radius-lg: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Header moderno */
+        .modern-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            box-shadow: var(--shadow-2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            height: 64px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+            padding: 0 24px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+
+        .logo:hover {
+            color: white;
+            text-decoration: none;
+        }
+
+        .logo .material-icons {
+            font-size: 28px;
+            margin-right: 12px;
+        }
+
+        /* Sidebar moderno */
+        .modern-sidebar {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            width: 280px;
+            height: calc(100vh - 64px);
+            background: var(--surface-color);
+            border-right: 1px solid var(--border-color);
+            overflow-y: auto;
+            z-index: 999;
+            transform: translateX(0);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-content {
+            padding: 24px 0;
+        }
+
+        .nav-section {
+            margin-bottom: 32px;
+        }
+
+        .nav-section-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            padding: 0 24px 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            margin: 4px 12px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(25, 118, 210, 0.08);
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .nav-link.active {
+            background-color: rgba(25, 118, 210, 0.12);
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .nav-link .material-icons {
+            margin-right: 16px;
+            font-size: 24px;
+        }
+
+        /* Contenido principal */
+        .main-content {
+            margin-left: 280px;
+            margin-top: 64px;
+            padding: 32px;
+            min-height: calc(100vh - 64px);
+        }
+
+        /* Cards modernos */
+        .modern-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-1);
+            border: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        .modern-card:hover {
+            box-shadow: var(--shadow-2);
+            transform: translateY(-2px);
+        }
+
+        .modern-card .card-header {
+            background: transparent;
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 24px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .modern-card .card-body {
+            padding: 24px;
+        }
+
+        /* Botones modernos */
+        .btn-modern {
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            padding: 12px 24px;
+            border: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: none;
+            box-shadow: var(--shadow-1);
+        }
+
+        .btn-modern:hover {
+            box-shadow: var(--shadow-2);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary.btn-modern {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        }
+
+        .btn-success.btn-modern {
+            background: linear-gradient(135deg, var(--success-color), #2e7d32);
+        }
+
+        .btn-warning.btn-modern {
+            background: linear-gradient(135deg, var(--warning-color), #ef6c00);
+        }
+
+        .btn-danger.btn-modern {
+            background: linear-gradient(135deg, var(--error-color), #c62828);
+        }
+
+        /* Métricas del dashboard */
+        .metric-card {
+            background: var(--surface-color);
+            border-radius: var(--border-radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-1);
+            border: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
+        }
+
+        .metric-card:hover {
+            box-shadow: var(--shadow-2);
+            transform: translateY(-2px);
+        }
+
+        .metric-card.success::before {
+            background: linear-gradient(90deg, var(--success-color), #4caf50);
+        }
+
+        .metric-card.warning::before {
+            background: linear-gradient(90deg, var(--warning-color), #ff9800);
+        }
+
+        .metric-card.danger::before {
+            background: linear-gradient(90deg, var(--error-color), #f44336);
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .metric-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            background: rgba(25, 118, 210, 0.1);
+        }
+
+        .metric-icon .material-icons {
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+
+        /* Forms modernos */
+        .form-control {
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 12px 16px;
+            font-size: 1rem;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .modern-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .modern-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 16px;
+            }
+
+            .header-content {
+                padding: 0 16px;
+            }
+        }
+
+        /* Alertas modernas */
+        .alert {
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 16px 20px;
+            box-shadow: var(--shadow-1);
+        }
+
+        /* Tablas modernas */
+        .table {
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-1);
+        }
+
+        .table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--border-color);
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Usuario dropdown */
+        .user-dropdown {
+            position: relative;
+        }
+
+        .user-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            border-radius: 50px;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .user-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        /* Animaciones */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header moderno -->
+    <header class="modern-header">
+        <div class="header-content">
+            <a href="{{ url_for('main.dashboard') }}" class="logo">
+                <span class="material-icons">account_balance_wallet</span>
+                Finanzas App
+            </a>
+            
+            {% if current_user.is_authenticated %}
+            <div class="user-dropdown">
+                <div class="dropdown">
+                    <button class="btn user-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <span class="material-icons" style="font-size: 18px; margin-right: 8px;">account_circle</span>
+                        {{ current_user.get_full_name() }}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+                                <span class="material-icons" style="font-size: 18px; margin-right: 8px;">settings</span>
+                                Perfil
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('auth.logout') }}">
+                                <span class="material-icons" style="font-size: 18px; margin-right: 8px;">logout</span>
+                                Cerrar Sesión
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    {% if current_user.is_authenticated %}
+    <!-- Sidebar moderno -->
+    <aside class="modern-sidebar">
+        <div class="sidebar-content">
+            <div class="nav-section">
+                <div class="nav-section-title">Principal</div>
+                <div class="nav-item">
+                    <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
+                        <span class="material-icons">dashboard</span>
+                        Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Finanzas</div>
+                <div class="nav-item">
+                    <a class="nav-link {% if 'account' in request.endpoint %}active{% endif %}" href="{{ url_for('main.accounts') }}">
+                        <span class="material-icons">account_balance</span>
+                        Cuentas
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link {% if 'transaction' in request.endpoint %}active{% endif %}" href="{{ url_for('main.transactions') }}">
+                        <span class="material-icons">receipt_long</span>
+                        Transacciones
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link {% if 'credit_card' in request.endpoint %}active{% endif %}" href="{{ url_for('main.credit_cards') }}">
+                        <span class="material-icons">credit_card</span>
+                        Tarjetas de Crédito
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Reportes</div>
+                <div class="nav-item">
+                    <a class="nav-link {% if 'monthly_report' in request.endpoint %}active{% endif %}" href="{{ url_for('main.monthly_report') }}">
+                        <span class="material-icons">assessment</span>
+                        Reporte Mensual
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link {% if 'quarterly_report' in request.endpoint %}active{% endif %}" href="{{ url_for('main.quarterly_report') }}">
+                        <span class="material-icons">trending_up</span>
+                        Reporte Trimestral
+                    </a>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Herramientas</div>
+                <div class="nav-item">
+                    <a class="nav-link {% if 'reminder' in request.endpoint %}active{% endif %}" href="{{ url_for('main.reminders') }}">
+                        <span class="material-icons">notification_important</span>
+                        Recordatorios
+                    </a>
+                </div>
+            </div>
+        </div>
+    </aside>
+    {% endif %}
+
+    <!-- Contenido principal -->
+    <main class="main-content {% if not current_user.is_authenticated %}w-100 m-0{% endif %}">
+        <div class="fade-in">
+            <!-- Mensajes flash -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {% if category == 'success' %}
+                                    <span class="material-icons" style="font-size: 18px; margin-right: 8px;">check_circle</span>
+                                {% elif category == 'error' or category == 'danger' %}
+                                    <span class="material-icons" style="font-size: 18px; margin-right: 8px;">error</span>
+                                {% elif category == 'warning' %}
+                                    <span class="material-icons" style="font-size: 18px; margin-right: 8px;">warning</span>
+                                {% else %}
+                                    <span class="material-icons" style="font-size: 18px; margin-right: 8px;">info</span>
+                                {% endif %}
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Contenido de la página -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'transaction' in request.endpoint %}active{% endif %}" href="{{ url_for('main.transactions') }}">
+                                <i class="fas fa-exchange-alt me-2"></i>Transacciones
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'credit' in request.endpoint %}active{% endif %}" href="{{ url_for('main.credit_cards') }}">
+                                <i class="fas fa-credit-card me-2"></i>Tarjetas de Crédito
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'debt' in request.endpoint %}active{% endif %}" href="{{ url_for('main.debt_accounts') }}">
+                                <i class="fas fa-hand-holding-usd me-2 text-danger"></i>Deudas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'reminder' in request.endpoint %}active{% endif %}" href="{{ url_for('main.reminders') }}">
+                                <i class="fas fa-bell me-2"></i>Recordatorios
+                            </a>
+                        </li>
+                    </ul>
+
+                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        <span>Reportes</span>
+                    </h6>
+                    <ul class="nav flex-column mb-2">
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'main.monthly_report' %}active{% endif %}" href="{{ url_for('main.monthly_report') }}">
+                                <i class="fas fa-calendar-alt me-2"></i>Reporte Mensual
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'main.quarterly_report' %}active{% endif %}" href="{{ url_for('main.quarterly_report') }}">
+                                <i class="fas fa-chart-bar me-2"></i>Reporte Trimestral
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'main.annual_summary' %}active{% endif %}" href="{{ url_for('main.annual_summary') }}">
+                                <i class="fas fa-chart-pie me-2"></i>Resumen Anual
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if request.endpoint == 'main.debt_analysis' %}active{% endif %}" href="{{ url_for('main.debt_analysis') }}">
+                                <i class="fas fa-analytics me-2"></i>Análisis de Deudas
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            {% endif %}
+
+            <!-- Contenido principal -->
+            <main class="{% if current_user.is_authenticated %}col-md-9 ms-sm-auto col-lg-10 px-md-4{% else %}col-12{% endif %}">
+                <!-- Mensajes flash -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="alert-container mt-3">
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {% if category == 'success' %}
+                                        <i class="fas fa-check-circle me-2"></i>
+                                    {% elif category == 'error' %}
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                    {% elif category == 'warning' %}
+                                        <i class="fas fa-exclamation-circle me-2"></i>
+                                    {% else %}
+                                        <i class="fas fa-info-circle me-2"></i>
+                                    {% endif %}
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <!-- Contenido de la página -->
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Auto-cerrar alertas después de 5 segundos
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert-dismissible');
+            alerts.forEach(alert => {
+                const closeBtn = alert.querySelector('.btn-close');
+                if (closeBtn) {
+                    closeBtn.click();
+                }
+            });
+        }, 5000);
+
+        // Formatear números como moneda
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2
+            }).format(amount);
+        }
+
+        // Aplicar formato de moneda a elementos con clase 'currency'
+        document.addEventListener('DOMContentLoaded', function() {
+            const currencyElements = document.querySelectorAll('.currency');
+            currencyElements.forEach(element => {
+                const amount = parseFloat(element.textContent);
+                if (!isNaN(amount)) {
+                    element.textContent = formatCurrency(amount);
+                }
+            });
+
+            // Animar entrada de cards
+            const cards = document.querySelectorAll('.modern-card, .metric-card');
+            cards.forEach((card, index) => {
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.classList.add('fade-in');
+            });
+        });
+
+        // Toggle sidebar en móvil
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.modern-sidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        // Cerrar sidebar al hacer click fuera en móvil
+        document.addEventListener('click', function(event) {
+            const sidebar = document.querySelector('.modern-sidebar');
+            const isClickInsideSidebar = sidebar.contains(event.target);
+            const isClickOnMenuButton = event.target.closest('.navbar-toggler');
+            
+            if (!isClickInsideSidebar && !isClickOnMenuButton && window.innerWidth <= 768) {
+                sidebar.classList.remove('show');
+            }
+        });
+
+        // Smooth scrolling para navegación
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

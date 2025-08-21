@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}Pago a {{ credit_card.name }} - Finanzas Personales{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Pago a Tarjeta de Crédito</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('main.credit_cards') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Volver
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Información de la Tarjeta -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="card-title mb-1">
+                            <i class="fas fa-credit-card me-2"></i>{{ credit_card.name }}
+                        </h5>
+                        <p class="card-text mb-1">{{ credit_card.bank_name }} •••• {{ credit_card.last_four_digits }}</p>
+                        <small class="opacity-75">
+                            Límite: ${{ "%.2f"|format(credit_card.credit_limit) }} | 
+                            Disponible: ${{ "%.2f"|format(credit_card.get_available_credit()) }}
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        <h3 class="mb-1">${{ "%.2f"|format(credit_card.current_balance) }}</h3>
+                        <small class="opacity-75">Saldo Actual</small>
+                        <br>
+                        <small class="opacity-75">
+                            Pago Mínimo: ${{ "%.2f"|format(credit_card.minimum_payment) }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario de Pago -->
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-money-bill-wave me-2"></i>Realizar Pago
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Monto a Pagar *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" step="0.01" class="form-control" 
+                                   id="amount" name="amount" min="0.01" 
+                                   max="{{ credit_card.current_balance }}" required
+                                   placeholder="0.00">
+                        </div>
+                        <div class="form-text">
+                            Máximo: ${{ "%.2f"|format(credit_card.current_balance) }} (saldo actual)
+                        </div>
+                    </div>
+                    
+                    <!-- Botones de pago rápido -->
+                    <div class="mb-3">
+                        <label class="form-label">Pagos Sugeridos</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-outline-success btn-sm" 
+                                    onclick="setAmount({{ credit_card.minimum_payment }})">
+                                Mínimo: ${{ "%.2f"|format(credit_card.minimum_payment) }}
+                            </button>
+                            {% if credit_card.current_balance * 0.5 > credit_card.minimum_payment %}
+                            <button type="button" class="btn btn-outline-info btn-sm" 
+                                    onclick="setAmount({{ credit_card.current_balance * 0.5 }})">
+                                50%: ${{ "%.2f"|format(credit_card.current_balance * 0.5) }}
+                            </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-outline-primary btn-sm" 
+                                    onclick="setAmount({{ credit_card.current_balance }})">
+                                Total: ${{ "%.2f"|format(credit_card.current_balance) }}
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="account_id" class="form-label">Pagar desde Cuenta</label>
+                        <select class="form-select" id="account_id" name="account_id">
+                            <option value="">Seleccionar cuenta (opcional)...</option>
+                            {% for account in accounts %}
+                            <option value="{{ account.id }}">
+                                {{ account.name }} - ${{ "%.2f"|format(account.balance) }}
+                                {% if account.balance < credit_card.minimum_payment %}
+                                    (Fondos insuficientes)
+                                {% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">
+                            Si seleccionas una cuenta, el monto se descontará automáticamente
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción</label>
+                        <input type="text" class="form-control" id="description" name="description" 
+                               value="Pago a {{ credit_card.name }}"
+                               placeholder="Descripción del pago">
+                    </div>
+                    
+                    <!-- Resumen del pago -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title">Resumen del Pago</h6>
+                            <div class="row">
+                                <div class="col-6">
+                                    <small class="text-muted">Saldo Actual:</small>
+                                    <div class="fw-bold">${{ "%.2f"|format(credit_card.current_balance) }}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Después del Pago:</small>
+                                    <div class="fw-bold text-success" id="new-balance">
+                                        ${{ "%.2f"|format(credit_card.current_balance) }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('main.credit_cards') }}" class="btn btn-outline-secondary me-md-2">
+                            Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-credit-card me-1"></i>Realizar Pago
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('amount');
+    const newBalanceSpan = document.getElementById('new-balance');
+    const currentBalance = {{ credit_card.current_balance }};
+    
+    function updateNewBalance() {
+        const paymentAmount = parseFloat(amountInput.value) || 0;
+        const newBalance = Math.max(0, currentBalance - paymentAmount);
+        newBalanceSpan.textContent = '$' + newBalance.toFixed(2);
+        
+        // Cambiar color según el resultado
+        if (newBalance === 0) {
+            newBalanceSpan.className = 'fw-bold text-success';
+        } else if (paymentAmount >= {{ credit_card.minimum_payment }}) {
+            newBalanceSpan.className = 'fw-bold text-info';
+        } else {
+            newBalanceSpan.className = 'fw-bold text-warning';
+        }
+    }
+    
+    amountInput.addEventListener('input', updateNewBalance);
+    
+    // Validar fondos en cuenta seleccionada
+    const accountSelect = document.getElementById('account_id');
+    accountSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.text.includes('Fondos insuficientes')) {
+            amountInput.max = 0;
+        } else {
+            amountInput.max = currentBalance;
+        }
+    });
+});
+
+function setAmount(amount) {
+    document.getElementById('amount').value = amount.toFixed(2);
+    document.getElementById('amount').dispatchEvent(new Event('input'));
+}
+</script>
+
+{% endblock %}

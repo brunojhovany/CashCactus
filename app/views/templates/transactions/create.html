@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Transacción - Finanzas Personales{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Nueva Transacción</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('main.transactions') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Volver
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-plus me-2"></i>Registrar Transacción
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="transaction_type" class="form-label">Tipo de Transacción *</label>
+                        <select class="form-select" id="transaction_type" name="transaction_type" required>
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="income">Ingreso</option>
+                            <option value="expense">Gasto</option>
+                            <option value="transfer">Transferencia</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="account_or_card" class="form-label">Cuenta o Tarjeta *</label>
+                        <select class="form-select" id="account_or_card" name="account_or_card" required>
+                            <option value="">Seleccionar cuenta o tarjeta...</option>
+                            {% if accounts %}
+                            <optgroup label="💰 Cuentas Bancarias">
+                                {% for account in accounts %}
+                                <option value="account_{{ account.id }}" {% if preselected_account_id and account.id|string == preselected_account_id %}selected{% endif %}>
+                                    {{ account.name }} - {{ account.get_account_type_display() }} (${{ "%.2f"|format(account.balance) }})
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                            {% if credit_cards %}
+                            <optgroup label="💳 Tarjetas de Crédito">
+                                {% for card in credit_cards %}
+                                <option value="credit_card_{{ card.id }}">
+                                    {{ card.name }} - {{ card.bank_name }} •••• {{ card.last_four_digits }} (Disp: ${{ "%.2f"|format(card.get_available_credit()) }})
+                                </option>
+                                {% endfor %}
+                            </optgroup>
+                            {% endif %}
+                        </select>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>Cuentas:</strong> el monto se suma/resta del saldo. 
+                            <strong>Tarjetas:</strong> gastos aumentan la deuda, pagos la reducen.
+                        </div>
+                    </div>
+                    
+                    <!-- Campos ocultos para el backend -->
+                    <input type="hidden" id="account_id" name="account_id">
+                    <input type="hidden" id="credit_card_id" name="credit_card_id">
+                    
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Monto *</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="amount" name="amount" 
+                                   step="0.01" min="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Descripción *</label>
+                        <input type="text" class="form-control" id="description" name="description" required
+                               placeholder="Ej: Compra de supermercado">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Categoría *</label>
+                        <select class="form-select" id="category" name="category" required>
+                            <option value="">Seleccionar categoría...</option>
+                            <optgroup label="Gastos">
+                                <option value="food">Alimentación</option>
+                                <option value="transport">Transporte</option>
+                                <option value="entertainment">Entretenimiento</option>
+                                <option value="utilities">Servicios</option>
+                                <option value="healthcare">Salud</option>
+                                <option value="shopping">Compras</option>
+                                <option value="education">Educación</option>
+                                <option value="travel">Viajes</option>
+                                <option value="debt_payment">Pago de Deudas</option>
+                            </optgroup>
+                            <optgroup label="Ingresos">
+                                <option value="salary">Salario</option>
+                                <option value="freelance">Trabajos Independientes</option>
+                                <option value="investment">Inversiones</option>
+                            </optgroup>
+                            <option value="other">Otros</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="date" class="form-label">Fecha</label>
+                        <input type="date" class="form-control" id="date" name="date" 
+                               value="{{ current_date or '' }}">
+                    </div>
+                    
+                    <!-- Campos para transferencias -->
+                    <div id="transfer-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="transfer_to_account_id" class="form-label">Cuenta Destino</label>
+                            <select class="form-select" id="transfer_to_account_id" name="transfer_to_account_id">
+                                <option value="">Seleccionar cuenta destino...</option>
+                                {% for account in accounts %}
+                                <option value="{{ account.id }}">{{ account.name }} - {{ account.get_account_type_display() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Campos para pagos de deudas -->
+                    <div id="debt-fields" style="display: none;">
+                        <div class="mb-3">
+                            <label for="creditor_name" class="form-label">Acreedor</label>
+                            <input type="text" class="form-control" id="creditor_name" name="creditor_name"
+                                   placeholder="Nombre del acreedor">
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="is_debt_payment" name="is_debt_payment">
+                            <label class="form-check-label" for="is_debt_payment">
+                                Es un pago de deuda a terceros
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notas</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3"
+                                  placeholder="Notas adicionales (opcional)"></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('main.transactions') }}" class="btn btn-outline-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Guardar Transacción
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('transaction_type').addEventListener('change', function() {
+    const transferFields = document.getElementById('transfer-fields');
+    const debtFields = document.getElementById('debt-fields');
+    
+    if (this.value === 'transfer') {
+        transferFields.style.display = 'block';
+        debtFields.style.display = 'none';
+    } else if (this.value === 'expense') {
+        debtFields.style.display = 'block';
+        transferFields.style.display = 'none';
+    } else {
+        transferFields.style.display = 'none';
+        debtFields.style.display = 'none';
+    }
+});
+
+document.getElementById('category').addEventListener('change', function() {
+    const debtFields = document.getElementById('debt-fields');
+    const isDebtPayment = document.getElementById('is_debt_payment');
+    
+    if (this.value === 'debt_payment') {
+        debtFields.style.display = 'block';
+        isDebtPayment.checked = true;
+    }
+});
+
+// Manejar selección de cuenta o tarjeta de crédito
+document.getElementById('account_or_card').addEventListener('change', function() {
+    const accountIdField = document.getElementById('account_id');
+    const creditCardIdField = document.getElementById('credit_card_id');
+    const selectedValue = this.value;
+    
+    // Limpiar campos ocultos
+    accountIdField.value = '';
+    creditCardIdField.value = '';
+    
+    if (selectedValue.startsWith('account_')) {
+        // Es una cuenta bancaria
+        const accountId = selectedValue.replace('account_', '');
+        accountIdField.value = accountId;
+    } else if (selectedValue.startsWith('credit_card_')) {
+        // Es una tarjeta de crédito
+        const cardId = selectedValue.replace('credit_card_', '');
+        creditCardIdField.value = cardId;
+    }
+});
+</script>
+{% endblock %}

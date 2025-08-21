@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Tarjeta de Crédito{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>Editar Tarjeta de Crédito
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre de la Tarjeta</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ credit_card.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="bank_name" class="form-label">Banco</label>
+                            <input type="text" class="form-control" id="bank_name" name="bank_name" 
+                                   value="{{ credit_card.bank_name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="last_four_digits" class="form-label">Últimos 4 Dígitos</label>
+                            <input type="text" class="form-control" id="last_four_digits" 
+                                   name="last_four_digits" maxlength="4" pattern="[0-9]{4}" 
+                                   value="{{ credit_card.last_four_digits }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="credit_limit" class="form-label">Límite de Crédito</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" step="0.01" class="form-control" 
+                                       id="credit_limit" name="credit_limit" 
+                                       value="{{ credit_card.credit_limit }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="current_balance" class="form-label">Saldo Actual</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" step="0.01" class="form-control" 
+                                       id="current_balance" name="current_balance" 
+                                       value="{{ credit_card.current_balance }}" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="due_date" class="form-label">Día de Vencimiento de Pago</label>
+                            <input type="number" class="form-control" id="due_date" name="due_date" 
+                                   min="1" max="31" value="{{ credit_card.due_date }}" required>
+                            <div class="form-text">Día del mes en que vence el pago (1-31)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="closing_date" class="form-label">Día de Corte</label>
+                            <input type="number" class="form-control" id="closing_date" name="closing_date" 
+                                   min="1" max="31" value="{{ credit_card.closing_date }}" required>
+                            <div class="form-text">Día del mes en que se corta el estado de cuenta (1-31)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="interest_rate" class="form-label">Tasa de Interés Anual (%)</label>
+                            <div class="input-group">
+                                <input type="number" step="0.01" class="form-control" 
+                                       id="interest_rate" name="interest_rate" min="0" max="100" 
+                                       value="{{ credit_card.interest_rate or 0.00 }}">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text">Tasa de interés anual por mora (opcional)</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_active" 
+                                       name="is_active" {% if credit_card.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    Tarjeta activa
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.credit_cards') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Guardar Cambios
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Cuenta de Deuda{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-credit-card text-danger me-2"></i>Nueva Cuenta de Deuda</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="row">
+                            <!-- Información básica -->
+                            <div class="col-md-6">
+                                <h5 class="text-muted mb-3">Información Básica</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Nombre de la Deuda *</label>
+                                    <input type="text" class="form-control" id="name" name="name" required
+                                           placeholder="Ej: Préstamo Personal Banco ABC">
+                                    <div class="form-text">Nombre descriptivo para identificar la deuda</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="creditor_name" class="form-label">Acreedor *</label>
+                                    <input type="text" class="form-control" id="creditor_name" name="creditor_name" required
+                                           placeholder="Ej: Banco ABC, Financiera XYZ">
+                                    <div class="form-text">Nombre de la institución o persona acreedora</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="original_amount" class="form-label">Monto Original de la Deuda *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="original_amount" name="original_amount" 
+                                               step="0.01" min="0.01" required placeholder="0.00">
+                                    </div>
+                                    <div class="form-text">Monto total de la deuda al momento de contraerla</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Términos financieros -->
+                            <div class="col-md-6">
+                                <h5 class="text-muted mb-3">Términos Financieros</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="interest_rate" class="form-label">Tasa de Interés Anual (%)</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="interest_rate" name="interest_rate" 
+                                               step="0.01" min="0" max="100" value="0" placeholder="0.00">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    <div class="form-text">Tasa de interés anual (0 si no genera intereses)</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="minimum_payment" class="form-label">Pago Mínimo Mensual</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="minimum_payment" name="minimum_payment" 
+                                               step="0.01" min="0" value="0" placeholder="0.00">
+                                    </div>
+                                    <div class="form-text">Pago mínimo requerido mensualmente (opcional)</div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="payment_due_day" class="form-label">Día de Vencimiento</label>
+                                    <select class="form-select" id="payment_due_day" name="payment_due_day">
+                                        {% for day in range(1, 32) %}
+                                        <option value="{{ day }}" {% if day == 1 %}selected{% endif %}>{{ day }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Día del mes en que vence el pago</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notas adicionales -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h5 class="text-muted mb-3">Información Adicional</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Notas</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3"
+                                              placeholder="Detalles adicionales sobre la deuda (opcional)"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Simulación de interés -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <h6><i class="fas fa-calculator me-2"></i>Simulación de Interés</h6>
+                                    <div id="interest-simulation">
+                                        <p class="mb-1">Interés mensual estimado: <strong id="monthly-interest">$0.00</strong></p>
+                                        <p class="mb-0">Con pago mínimo, balance en 12 meses: <strong id="balance-12months">$0.00</strong></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Botones -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('main.debt_accounts') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Crear Cuenta de Deuda
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const originalAmountInput = document.getElementById('original_amount');
+    const interestRateInput = document.getElementById('interest_rate');
+    const minimumPaymentInput = document.getElementById('minimum_payment');
+    
+    function calculateInterestSimulation() {
+        const originalAmount = parseFloat(originalAmountInput.value) || 0;
+        const annualRate = parseFloat(interestRateInput.value) || 0;
+        const minimumPayment = parseFloat(minimumPaymentInput.value) || 0;
+        
+        const monthlyRate = annualRate / 100 / 12;
+        const monthlyInterest = originalAmount * monthlyRate;
+        
+        // Simular balance después de 12 meses
+        let balance = originalAmount;
+        for (let i = 0; i < 12; i++) {
+            const interest = balance * monthlyRate;
+            balance += interest;
+            if (minimumPayment > 0) {
+                balance = Math.max(0, balance - minimumPayment);
+            }
+        }
+        
+        // Actualizar visualización
+        document.getElementById('monthly-interest').textContent = '$' + monthlyInterest.toFixed(2);
+        document.getElementById('balance-12months').textContent = '$' + balance.toFixed(2);
+    }
+    
+    // Escuchar cambios en los campos
+    originalAmountInput.addEventListener('input', calculateInterestSimulation);
+    interestRateInput.addEventListener('input', calculateInterestSimulation);
+    minimumPaymentInput.addEventListener('input', calculateInterestSimulation);
+    
+    // Calcular inicialmente
+    calculateInterestSimulation();
+});
+</script>
+{% endblock %}

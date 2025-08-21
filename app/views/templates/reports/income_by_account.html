@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Ingresos por Cuenta - Finanzas Personales{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">💰 Reporte de Ingresos por Cuenta - {{ month_name }} {{ year }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('main.monthly_report') }}" class="btn btn-outline-primary">
+                📊 Reporte Mensual
+            </a>
+            <a href="{{ url_for('main.quarterly_report') }}" class="btn btn-outline-secondary">
+                📈 Reporte Trimestral
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen Ejecutivo -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h6><i class="bi bi-cash-stack"></i> Ingresos Totales</h6>
+                <h3>${{ "%.2f"|format(income_summary.total_income) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h6><i class="bi bi-bank"></i> Cuentas con Ingresos</h6>
+                <h3>{{ income_summary.account_count }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h6><i class="bi bi-calendar3"></i> Período</h6>
+                <h5>{{ income_summary.period }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <h6><i class="bi bi-graph-up"></i> Ingreso Promedio</h6>
+                <h4>${{ "%.2f"|format(income_summary.total_income / income_summary.account_count if income_summary.account_count > 0 else 0) }}</h4>
+                <small>por cuenta</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if income_summary.income_by_account %}
+<!-- Gráficos de Ingresos -->
+<div class="row mb-4">
+    <!-- Gráfico de Pastel -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="bi bi-pie-chart"></i> Distribución de Ingresos por Cuenta</h5>
+            </div>
+            <div class="card-body">
+                {% if income_pie_chart %}
+                    <img src="data:image/png;base64,{{ income_pie_chart }}" class="img-fluid" alt="Distribución de Ingresos">
+                {% else %}
+                    <div class="text-center text-muted">
+                        <p>Sin datos suficientes para generar el gráfico</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Gráfico de Barras -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="bi bi-bar-chart"></i> Ranking de Ingresos por Cuenta</h5>
+            </div>
+            <div class="card-body">
+                {% if income_bar_chart %}
+                    <img src="data:image/png;base64,{{ income_bar_chart }}" class="img-fluid" alt="Ranking de Ingresos">
+                {% else %}
+                    <div class="text-center text-muted">
+                        <p>Sin datos suficientes para generar el gráfico</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detalle por Cuenta -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-list-check"></i> Detalle de Ingresos por Cuenta</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Cuenta</th>
+                                <th class="text-end">Balance Actual</th>
+                                <th class="text-end">Ingresos del Mes</th>
+                                <th class="text-end">% del Total</th>
+                                <th class="text-end">Transacciones</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for account_name, data in income_summary.income_by_account.items() %}
+                            <tr>
+                                <td>
+                                    <strong>{{ account_name }}</strong>
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge bg-{% if data.current_balance > 0 %}success{% else %}danger{% endif %}">
+                                        ${{ "%.2f"|format(data.current_balance) }}
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <strong class="text-success">${{ "%.2f"|format(data.total_income) }}</strong>
+                                </td>
+                                <td class="text-end">
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             style="width: {{ data.percentage }}%;" 
+                                             aria-valuenow="{{ data.percentage }}" aria-valuemin="0" aria-valuemax="100">
+                                            {{ "%.1f"|format(data.percentage) }}%
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-end">
+                                    <span class="badge bg-info">{{ data.transaction_count }}</span>
+                                </td>
+                                <td>
+                                    {% if data.percentage > 50 %}
+                                        <span class="badge bg-warning">Cuenta Principal</span>
+                                    {% elif data.percentage > 20 %}
+                                        <span class="badge bg-info">Cuenta Secundaria</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark">Cuenta Menor</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transacciones Detalladas -->
+<div class="row mb-4">
+    {% for account_name, data in income_summary.income_by_account.items() %}
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6><i class="bi bi-bank"></i> {{ account_name }}</h6>
+                <small class="text-muted">{{ data.transaction_count }} transacciones - ${{ "%.2f"|format(data.total_income) }}</small>
+            </div>
+            <div class="card-body">
+                {% if data.transactions %}
+                    <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Descripción</th>
+                                    <th class="text-end">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in data.transactions %}
+                                <tr>
+                                    <td>
+                                        <small>{{ transaction.date.strftime('%d/%m/%Y') }}</small>
+                                    </td>
+                                    <td>
+                                        <small>{{ transaction.description[:30] }}{% if transaction.description|length > 30 %}...{% endif %}</small>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="text-success">+${{ "%.2f"|format(transaction.amount) }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">Sin transacciones en este período</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<!-- Sin Datos -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-exclamation-circle text-warning" style="font-size: 4rem;"></i>
+                <h4 class="mt-3">Sin Ingresos Registrados</h4>
+                <p class="text-muted">No se encontraron ingresos para {{ month_name }} {{ year }}</p>
+                <a href="{{ url_for('main.add_transaction') }}" class="btn btn-success">
+                    <i class="bi bi-plus-circle"></i> Agregar Ingreso
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Navegación de Meses -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6>Navegar por Meses</h6>
+                <div class="btn-group" role="group">
+                    {% set prev_month = month - 1 if month > 1 else 12 %}
+                    {% set prev_year = year if month > 1 else year - 1 %}
+                    <a href="{{ url_for('main.income_by_account_report', year=prev_year, month=prev_month) }}" 
+                       class="btn btn-outline-secondary">
+                        ← {{ prev_month|month_name }} {{ prev_year }}
+                    </a>
+                    
+                    <a href="{{ url_for('main.income_by_account_report') }}" class="btn btn-primary">
+                        Mes Actual
+                    </a>
+                    
+                    {% set next_month = month + 1 if month < 12 else 1 %}
+                    {% set next_year = year if month < 12 else year + 1 %}
+                    <a href="{{ url_for('main.income_by_account_report', year=next_year, month=next_month) }}" 
+                       class="btn btn-outline-secondary">
+                        {{ next_month|month_name }} {{ next_year }} →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

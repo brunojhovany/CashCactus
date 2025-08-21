@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Transacciones de {{ account.name }} - Finanzas Personales{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <div>
+        <h1 class="h2">Transacciones de {{ account.name }}</h1>
+        <p class="text-muted mb-0">{{ account.get_account_type_display() }} - {{ account.bank_name or 'Sin banco' }}</p>
+        <p class="text-muted mb-0">Saldo actual: <span class="fw-bold text-{% if account.balance >= 0 %}success{% else %}danger{% endif %}">${{ "%.2f"|format(account.balance) }}</span></p>
+    </div>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('main.accounts') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Volver a Cuentas
+            </a>
+            <a href="{{ url_for('main.create_transaction') }}?account_id={{ account.id }}" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i>Nueva Transacción
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label for="category" class="form-label">Categoría</label>
+                <select class="form-select" id="category" name="category">
+                    <option value="">Todas las categorías</option>
+                    {% for cat_value, cat_label in categories %}
+                    <option value="{{ cat_value }}" {% if request.args.get('category') == cat_value %}selected{% endif %}>
+                        {{ cat_label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="transaction_type" class="form-label">Tipo</label>
+                <select class="form-select" id="transaction_type" name="transaction_type">
+                    <option value="">Todos los tipos</option>
+                    <option value="income" {% if request.args.get('transaction_type') == 'income' %}selected{% endif %}>Ingreso</option>
+                    <option value="expense" {% if request.args.get('transaction_type') == 'expense' %}selected{% endif %}>Gasto</option>
+                    <option value="transfer" {% if request.args.get('transaction_type') == 'transfer' %}selected{% endif %}>Transferencia</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-filter me-1"></i>Filtrar
+                </button>
+                <a href="{{ url_for('main.account_transactions', account_id=account.id) }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times me-1"></i>Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if transactions.items %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Transacciones ({{ transactions.total }})</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Fecha</th>
+                    <th>Descripción</th>
+                    <th>Categoría</th>
+                    <th>Tipo</th>
+                    <th class="text-end">Monto</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions.items %}
+                <tr>
+                    <td>
+                        <small class="text-muted">{{ transaction.date.strftime('%d/%m/%Y') }}</small>
+                    </td>
+                    <td>
+                        <div>
+                            <strong>{{ transaction.description }}</strong>
+                            {% if transaction.notes %}
+                            <br><small class="text-muted">{{ transaction.notes }}</small>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">{{ transaction.get_category_display() }}</span>
+                    </td>
+                    <td>
+                        {% if transaction.transaction_type == 'income' %}
+                            <span class="badge bg-success">Ingreso</span>
+                        {% elif transaction.transaction_type == 'expense' %}
+                            <span class="badge bg-danger">Gasto</span>
+                        {% else %}
+                            <span class="badge bg-info">Transferencia</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <span class="fw-bold text-{% if transaction.transaction_type == 'income' %}success{% else %}danger{% endif %}">
+                            {% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}${{ "%.2f"|format(transaction.amount) }}
+                        </span>
+                    </td>
+                    <td class="text-center">
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('main.edit_transaction', transaction_id=transaction.id) }}" 
+                               class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-danger btn-sm" 
+                                    onclick="deleteTransaction('{{ url_for('main.delete_transaction', transaction_id=transaction.id) }}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Paginación -->
+    {% if transactions.pages > 1 %}
+    <div class="card-footer">
+        <nav aria-label="Navegación de transacciones">
+            <ul class="pagination justify-content-center mb-0">
+                {% if transactions.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main.account_transactions', account_id=account.id, page=transactions.prev_num) }}">Anterior</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in transactions.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != transactions.page %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('main.account_transactions', account_id=account.id, page=page_num) }}">{{ page_num }}</a>
+                        </li>
+                        {% else %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% endif %}
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">…</span>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if transactions.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('main.account_transactions', account_id=account.id, page=transactions.next_num) }}">Siguiente</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-exchange-alt fa-4x text-muted mb-3"></i>
+    <h4 class="text-muted">No hay transacciones para esta cuenta</h4>
+    <p class="text-muted">Agrega tu primera transacción para esta cuenta</p>
+    <a href="{{ url_for('main.create_transaction') }}?account_id={{ account.id }}" class="btn btn-primary">
+        <i class="fas fa-plus me-1"></i>Crear Primera Transacción
+    </a>
+</div>
+{% endif %}
+
+<script>
+function deleteTransaction(url) {
+    if (confirm('¿Estás seguro de eliminar esta transacción?')) {
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = url;
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+
+{% endblock %}

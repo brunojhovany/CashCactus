@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Nueva Cuenta - Finanzas Personales{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Nueva Cuenta</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('main.accounts') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Volver
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-university me-2"></i>Información de la Cuenta
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nombre de la Cuenta *</label>
+                        <input type="text" class="form-control" id="name" name="name" required
+                               placeholder="Ej: Cuenta Corriente Principal">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="account_type" class="form-label">Tipo de Cuenta *</label>
+                        <select class="form-select" id="account_type" name="account_type" required>
+                            <option value="">Seleccionar tipo...</option>
+                            <option value="checking">Cuenta Corriente</option>
+                            <option value="savings">Cuenta de Ahorros</option>
+                            <option value="investment">Inversión</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="bank_name" class="form-label">Banco</label>
+                        <input type="text" class="form-control" id="bank_name" name="bank_name"
+                               placeholder="Ej: Banco Nacional">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="account_number" class="form-label">Número de Cuenta</label>
+                        <input type="text" class="form-control" id="account_number" name="account_number"
+                               placeholder="Ej: ****1234">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="balance" class="form-label">Saldo Inicial</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="balance" name="balance" 
+                                   step="0.01" value="0.00">
+                        </div>
+                        <div class="form-text">Ingresa el saldo actual de tu cuenta</div>
+                    </div>
+                    
+                    <!-- Campos de Inversión (solo para cuentas de ahorro e inversión) -->
+                    <div id="investment-fields" class="mb-3" style="display: none;">
+                        <div class="card bg-light">
+                            <div class="card-header">
+                                <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Configuración de Inversión</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="generates_interest" name="generates_interest">
+                                        <label class="form-check-label" for="generates_interest">
+                                            Esta cuenta genera intereses/rendimientos
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div id="interest-details" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="interest_rate" class="form-label">Tasa de Interés Anual (%)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" id="interest_rate" name="interest_rate" 
+                                                   step="0.01" min="0" max="100" value="0.00">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                        <div class="form-text">Tasa de interés anual (ej: 5.25 para 5.25%)</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="investment_type" class="form-label">Tipo de Inversión</label>
+                                        <select class="form-select" id="investment_type" name="investment_type">
+                                            <option value="">Seleccionar tipo...</option>
+                                            <option value="savings_account">Cuenta de Ahorros</option>
+                                            <option value="time_deposit">Depósito a Plazo</option>
+                                            <option value="mutual_fund">Fondo Mutuo</option>
+                                            <option value="stocks">Acciones</option>
+                                            <option value="bonds">Bonos</option>
+                                            <option value="crypto">Criptomonedas</option>
+                                            <option value="other">Otro</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="compound_frequency" class="form-label">Frecuencia de Capitalización</label>
+                                        <select class="form-select" id="compound_frequency" name="compound_frequency">
+                                            <option value="monthly">Mensual</option>
+                                            <option value="quarterly">Trimestral</option>
+                                            <option value="semi_annual">Semestral</option>
+                                            <option value="annual">Anual</option>
+                                        </select>
+                                        <div class="form-text">Con qué frecuencia se calculan y aplican los intereses</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="is_active" name="is_active" checked>
+                            <label class="form-check-label" for="is_active">
+                                Cuenta activa
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('main.accounts') }}" class="btn btn-outline-secondary me-md-2">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Guardar Cuenta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const accountTypeSelect = document.getElementById('account_type');
+    const investmentFields = document.getElementById('investment-fields');
+    const generatesInterestCheckbox = document.getElementById('generates_interest');
+    const interestDetails = document.getElementById('interest-details');
+    
+    // Mostrar/ocultar campos de inversión según el tipo de cuenta
+    accountTypeSelect.addEventListener('change', function() {
+        const accountType = this.value;
+        if (accountType === 'savings' || accountType === 'investment') {
+            investmentFields.style.display = 'block';
+        } else {
+            investmentFields.style.display = 'none';
+            generatesInterestCheckbox.checked = false;
+            interestDetails.style.display = 'none';
+        }
+    });
+    
+    // Mostrar/ocultar detalles de interés
+    generatesInterestCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            interestDetails.style.display = 'block';
+        } else {
+            interestDetails.style.display = 'none';
+        }
+    });
+});
+</script>
+{% endblock %}

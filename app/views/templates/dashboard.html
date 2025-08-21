@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Finanzas Personales{% endblock %}
+
+{% block content %}
+<!-- Header de página -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 mb-1">Dashboard Financiero</h1>
+        <p class="text-muted mb-0">Resumen de tu situación financiera actual</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('main.create_transaction') }}" class="btn btn-primary btn-modern">
+            <span class="material-icons" style="font-size: 18px; margin-right: 8px;">add</span>
+            Nueva Transacción
+        </a>
+        <a href="{{ url_for('main.monthly_report') }}" class="btn btn-outline-primary btn-modern">
+            <span class="material-icons" style="font-size: 18px; margin-right: 8px;">assessment</span>
+            Ver Reportes
+        </a>
+    </div>
+</div>
+
+<!-- Métricas principales -->
+<div class="row mb-4 g-3">
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card {% if net_worth.net_worth >= 0 %}success{% else %}danger{% endif %}">
+            <div class="metric-icon">
+                <span class="material-icons">account_balance_wallet</span>
+            </div>
+            <div class="metric-label">Patrimonio Neto</div>
+            <div class="metric-value">${{ "%.2f"|format(net_worth.net_worth) }}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card success">
+            <div class="metric-icon">
+                <span class="material-icons">trending_up</span>
+            </div>
+            <div class="metric-label">Ingresos del Mes</div>
+            <div class="metric-value">${{ "%.2f"|format(monthly_summary.total_income) }}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card danger">
+            <div class="metric-icon">
+                <span class="material-icons">trending_down</span>
+            </div>
+            <div class="metric-label">Gastos del Mes</div>
+            <div class="metric-value">${{ "%.2f"|format(monthly_summary.total_expenses) }}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="metric-card {% if monthly_summary.net_income >= 0 %}success{% else %}warning{% endif %}">
+            <div class="metric-icon">
+                <span class="material-icons">savings</span>
+            </div>
+            <div class="metric-label">Balance del Mes</div>
+            <div class="metric-value">${{ "%.2f"|format(monthly_summary.net_income) }}</div>
+        </div>
+    </div>
+</div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3 card-dashboard">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Gastos del Mes</h6>
+                        <h4 class="mb-0">${{ "%.2f"|format(monthly_summary.total_expenses) }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-arrow-down fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white {% if debt_summary.total_debt > 0 %}bg-danger{% else %}bg-secondary{% endif %} mb-3 card-dashboard">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Deudas</h6>
+                        <h4 class="mb-0">${{ "%.2f"|format(debt_summary.total_debt) }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-credit-card fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> -->
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h5>¡Bienvenido a tu aplicación de finanzas personales!</h5>
+                <p class="text-muted">Comienza agregando tus cuentas y transacciones para ver un resumen completo.</p>
+                <div class="mt-3">
+                    <a href="{{ url_for('main.create_account') }}" class="btn btn-primary me-2">
+                        <i class="fas fa-plus me-1"></i>Agregar Cuenta
+                    </a>
+                    <a href="{{ url_for('main.create_transaction') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-exchange-alt me-1"></i>Nueva Transacción
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toolbar de acciones -->
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('main.create_transaction') }}" class="btn btn-sm btn-primary">
+                <i class="fas fa-plus me-1"></i>Nueva Transacción
+            </a>
+            <a href="{{ url_for('main.monthly_report') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-chart-line me-1"></i>Ver Reportes
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen Financiero -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3 card-dashboard">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Patrimonio Neto</h6>
+                        <h4 class="mb-0">${{ "%.2f"|format(net_worth.net_worth) }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-chart-line fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3 card-dashboard">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Ingresos del Mes</h6>
+                        <h4 class="mb-0">${{ "%.2f"|format(monthly_summary.total_income) }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-arrow-up fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3 card-dashboard">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Gastos del Mes</h6>
+                        <h4 class="mb-0">${{ "%.2f"|format(monthly_summary.total_expenses) }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-arrow-down fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white {% if debt_summary.total_debt > 0 %}bg-danger{% else %}bg-secondary{% endif %} mb-3 card-dashboard">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Deudas</h6>
+                        <h4 class="mb-0">${{ "%.2f"|format(debt_summary.total_debt) }}</h4>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-credit-card fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alertas y Recordatorios -->
+{% if overdue_reminders or upcoming_reminders %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bell me-2"></i>Recordatorios y Alertas
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if overdue_reminders %}
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Recordatorios Vencidos</h6>
+                        {% for reminder in overdue_reminders[:3] %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>{{ reminder.title }}</span>
+                                <span class="badge bg-danger">
+                                    Vencido hace {{ reminder.get_days_until_due() * -1 }} días
+                                </span>
+                            </div>
+                        {% endfor %}
+                        {% if overdue_reminders|length > 3 %}
+                            <small class="text-muted">
+                                Y {{ overdue_reminders|length - 3 }} más...
+                                <a href="{{ url_for('main.reminders') }}">Ver todos</a>
+                            </small>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                {% if upcoming_reminders %}
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-clock me-2"></i>Próximos Vencimientos</h6>
+                        {% for reminder in upcoming_reminders[:3] %}
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span>{{ reminder.title }}</span>
+                                <span class="badge bg-warning">
+                                    En {{ reminder.get_days_until_due() }} días
+                                </span>
+                            </div>
+                        {% endfor %}
+                        {% if upcoming_reminders|length > 3 %}
+                            <small class="text-muted">
+                                Y {{ upcoming_reminders|length - 3 }} más...
+                                <a href="{{ url_for('main.reminders') }}">Ver todos</a>
+                            </small>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Contenido Principal -->
+<div class="row">
+    <!-- Transacciones Recientes -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Transacciones Recientes</h5>
+                <a href="{{ url_for('main.transactions') }}" class="btn btn-sm btn-outline-primary">Ver todas</a>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Descripción</th>
+                                    <th>Categoría</th>
+                                    <th>Tipo</th>
+                                    <th class="text-end">Monto</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in recent_transactions %}
+                                <tr>
+                                    <td>{{ transaction.date.strftime('%d/%m') }}</td>
+                                    <td>{{ transaction.description }}</td>
+                                    <td>{{ transaction.get_category_display() }}</td>
+                                    <td>
+                                        <span class="badge {% if transaction.transaction_type == 'income' %}bg-success{% else %}bg-danger{% endif %}">
+                                            {{ transaction.get_type_display() }}
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <span class="{% if transaction.transaction_type == 'income' %}text-success{% else %}text-danger{% endif %}">
+                                            {% if transaction.transaction_type == 'income' %}+{% else %}-{% endif %}${{ "%.2f"|format(transaction.amount) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-receipt fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No hay transacciones registradas</p>
+                        <a href="{{ url_for('main.create_transaction') }}" class="btn btn-primary">
+                            Crear primera transacción
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel Lateral -->
+    <div class="col-md-4">
+        <!-- Balance del Mes -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0">Balance Mensual</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h6 class="text-success">Ingresos</h6>
+                        <h5>${{ "%.2f"|format(monthly_summary.total_income) }}</h5>
+                    </div>
+                    <div class="col-6">
+                        <h6 class="text-danger">Gastos</h6>
+                        <h5>${{ "%.2f"|format(monthly_summary.total_expenses) }}</h5>
+                    </div>
+                </div>
+                <hr>
+                <div class="text-center">
+                    <h6>Balance Neto</h6>
+                    <h4 class="{% if monthly_summary.net_income >= 0 %}text-success{% else %}text-danger{% endif %}">
+                        ${{ "%.2f"|format(monthly_summary.net_income) }}
+                    </h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen de Deudas -->
+        {% if debt_summary.total_debt > 0 %}
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Resumen de Deudas</h6>
+                <span class="badge bg-danger">${{ "%.2f"|format(debt_summary.total_debt) }}</span>
+            </div>
+            <div class="card-body">
+                <!-- Desglose de deudas -->
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <small class="text-muted">Tarjetas de Crédito</small>
+                        <div class="h6 mb-0">${{ "%.2f"|format(debt_summary.credit_card_debt) }}</div>
+                        <small class="text-muted">{{ debt_summary.credit_card_count }} tarjeta(s)</small>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">Cuentas de Deuda</small>
+                        <div class="h6 mb-0">${{ "%.2f"|format(debt_summary.account_debt) }}</div>
+                        <small class="text-muted">{{ debt_summary.debt_account_count }} cuenta(s)</small>
+                    </div>
+                </div>
+                
+                <!-- Utilización de crédito (solo si hay tarjetas) -->
+                {% if debt_summary.credit_card_debt > 0 %}
+                <div class="mb-3">
+                    <small class="text-muted">Utilización de Crédito</small>
+                    <div class="progress">
+                        <div class="progress-bar {% if debt_summary.utilization_percentage > 70 %}bg-danger{% elif debt_summary.utilization_percentage > 30 %}bg-warning{% else %}bg-success{% endif %}" 
+                             style="width: {{ debt_summary.utilization_percentage }}%">
+                            {{ "%.1f"|format(debt_summary.utilization_percentage) }}%
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Información financiera -->
+                <div class="row text-center">
+                    <div class="col-4">
+                        <small class="text-muted">Pago Mínimo</small>
+                        <div class="h6 mb-0">${{ "%.2f"|format(debt_summary.total_minimum_payment) }}</div>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted">Interés Mensual</small>
+                        <div class="h6 mb-0 text-warning">${{ "%.2f"|format(debt_summary.monthly_interest) }}</div>
+                    </div>
+                    <div class="col-4">
+                        <small class="text-muted">Pagos Vencidos</small>
+                        <div class="h6 mb-0 {% if debt_summary.overdue_payments > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ debt_summary.overdue_payments }}
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="row mt-3">
+                    <div class="col-6">
+                        <a href="{{ url_for('main.debt_accounts') }}" class="btn btn-sm btn-outline-primary w-100">
+                            <i class="fas fa-list me-1"></i>Ver Deudas
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a href="{{ url_for('main.make_debt_payment') }}" class="btn btn-sm btn-success w-100">
+                            <i class="fas fa-money-bill me-1"></i>Pagar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Accesos Rápidos -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Accesos Rápidos</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('main.create_account') }}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>Nueva Cuenta
+                    </a>
+                    <a href="{{ url_for('main.create_credit_card') }}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-credit-card me-1"></i>Nueva Tarjeta
+                    </a>
+                    <a href="{{ url_for('main.create_reminder') }}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-bell me-1"></i>Nuevo Recordatorio
+                    </a>
+                    <a href="{{ url_for('main.income_by_account_report') }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-chart-pie me-1"></i>Ingresos por Cuenta
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
