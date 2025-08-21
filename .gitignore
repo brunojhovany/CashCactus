@@ -71,6 +71,7 @@ Jenkinsfile
 Thumbs.db
 Desktop.ini
 
-# Project-specific kept from repo
-config.py
-**/**.db
+# Project-specific
+# Keep sanitized config.py tracked; do not ignore it
+# Ignore databases inside instance folder only
+instance/*.db
