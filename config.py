@@ -2,6 +2,9 @@ import os
 from datetime import timedelta
 
 
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+
 class Config:
     """Application configuration (safe defaults for open source).
 
@@ -16,8 +19,9 @@ class Config:
     # Examples:
     #   export DATABASE_URL=postgresql+psycopg2://user:pass@host:5432/dbname
     #   export DATABASE_URL=mysql+pymysql://user:pass@host:3306/dbname
+    _default_sqlite = os.path.join(BASE_DIR, 'instance', 'finanzas.db')
     SQLALCHEMY_DATABASE_URI = os.environ.get(
-        'DATABASE_URL', 'sqlite:///instance/finanzas.db'
+        'DATABASE_URL', f'sqlite:///{_default_sqlite}'
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

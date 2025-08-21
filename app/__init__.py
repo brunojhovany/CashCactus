@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
+import os
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -44,6 +45,13 @@ def create_app():
         """Formatear cantidad como moneda"""
         return f"${amount:,.2f}"
     
+    # Ensure instance folder exists for SQLite
+    instance_path = os.path.join(app.root_path, '..', 'instance')
+    try:
+        os.makedirs(os.path.abspath(instance_path), exist_ok=True)
+    except Exception:
+        pass
+
     # Crear tablas
     with app.app_context():
         db.create_all()
