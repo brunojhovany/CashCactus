@@ -126,6 +126,7 @@
   border: 1px solid var(--pm-border);
   border-radius: var(--pm-radius);
   box-shadow: var(--pm-shadow-sm);
+  overflow: visible; /* avoid clipping dropdowns */
 }
 
 .pm-card-hover:hover {
@@ -221,3 +222,6 @@
 
 /* Flash alerts minimal */
 .alert { border: 1px solid var(--pm-border); }
+
+/* Bring dropdowns above cards */
+.dropdown-menu { z-index: 2000; }
