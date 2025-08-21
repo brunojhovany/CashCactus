@@ -1,6 +1,7 @@
 /* PaperMark-inspired minimal, clean theme */
 
 :root {
+  --sidebar-w: 280px;
   --pm-bg: #0b0f1a; /* dark header background (optional sections) */
   --pm-surface: #ffffff;
   --pm-muted: #6b7280; /* gray-500 */
@@ -25,19 +26,19 @@
   display: flex;
 }
 
-/* Sidebar - compact, dark */
+/* Sidebar - dark */
 .modern-sidebar {
   background: #0f172a;
   border-right: 1px solid var(--pm-border);
-  width: 84px;
+  width: var(--sidebar-w);
 }
-.modern-sidebar .nav-section-title { display: none; }
-.modern-sidebar .nav-link {
-  justify-content: center;
-  gap: 8px;
-}
-.modern-sidebar .nav-link .material-icons { margin-right: 0; }
-.modern-sidebar .nav-link span:not(.material-icons) { display: none; }
+
+/* Compact mode (icon-only) */
+[data-sidebar="compact"] { --sidebar-w: 84px; }
+[data-sidebar="compact"] .modern-sidebar .nav-section-title { display: none; }
+[data-sidebar="compact"] .modern-sidebar .nav-link { justify-content: center; gap: 8px; }
+[data-sidebar="compact"] .modern-sidebar .nav-link .material-icons { margin-right: 0; }
+[data-sidebar="compact"] .modern-sidebar .nav-link span:not(.material-icons) { display: none; }
 
 /* Top bar */
 .modern-header {
