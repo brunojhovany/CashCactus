@@ -1,5 +1,7 @@
 # CashCactus (Personal Finance)
 
+![CashCactus demo](images/image.png)
+
 Open-source Flask application to manage personal finances: accounts, credit cards, debts, transactions, reminders, and reports.
 
 ## Features
