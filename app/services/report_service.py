@@ -5,6 +5,7 @@ import matplotlib
 matplotlib.use('Agg')  # Para generar gráficos sin GUI
 import io
 import base64
+import numpy as np
 from app.models.transaction import Transaction
 from app.models.account import Account
 from app.models.credit_card import CreditCard
@@ -282,21 +283,38 @@ class ReportService:
                 'expenses': summary['total_expenses']
             })
         
-        # Crear gráfico de líneas
+        # Crear gráfico de líneas con regresión lineal (x numérico y etiquetas de mes)
         plt.figure(figsize=(12, 6))
-        months = [data['month_name'] for data in monthly_data]
-        incomes = [data['income'] for data in monthly_data]
-        expenses = [data['expenses'] for data in monthly_data]
-        
-        plt.plot(months, incomes, marker='o', label='Ingresos', linewidth=2)
-        plt.plot(months, expenses, marker='s', label='Gastos', linewidth=2)
-        
+        month_labels = [data['month_name'] for data in monthly_data]
+        x = np.arange(1, 13)
+        incomes = np.array([data['income'] for data in monthly_data], dtype=float)
+        expenses = np.array([data['expenses'] for data in monthly_data], dtype=float)
+
+        # Series originales
+        plt.plot(x, incomes, marker='o', label='Ingresos', linewidth=2)
+        plt.plot(x, expenses, marker='s', label='Gastos', linewidth=2)
+
+        # Regresión lineal: y = m*x + b
+        try:
+            m_inc, b_inc = np.polyfit(x, incomes, 1)
+            y_inc_fit = m_inc * x + b_inc
+            plt.plot(x, y_inc_fit, linestyle='--', alpha=0.7, label='Regresión ingresos')
+        except Exception:
+            pass
+
+        try:
+            m_exp, b_exp = np.polyfit(x, expenses, 1)
+            y_exp_fit = m_exp * x + b_exp
+            plt.plot(x, y_exp_fit, linestyle='--', alpha=0.7, label='Regresión gastos')
+        except Exception:
+            pass
+
         plt.title(f'Tendencia de Ingresos y Gastos - {year}')
         plt.xlabel('Mes')
         plt.ylabel('Monto ($)')
-        plt.legend()
         plt.grid(True, alpha=0.3)
-        plt.xticks(rotation=45)
+        plt.xticks(x, month_labels, rotation=45)
+        plt.legend()
         
         # Convertir a base64
         img_buffer = io.BytesIO()
