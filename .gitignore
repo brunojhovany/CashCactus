@@ -1,0 +1,75 @@
+# Python bytecode / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.venv.bak/
+venv.bak/
+.python-version
+
+# Environment variables
+.env
+.env.*
+.flaskenv
+
+# Flask instance folder and local SQLite DBs
+instance/
+!instance/.gitkeep
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Unit test / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.cache/
+coverage.xml
+nosetests.xml
+junit.xml
+
+# Packaging
+build/
+dist/
+.eggs/
+*.egg-info/
+wheels/
+pip-wheel-metadata/
+pip-log.txt
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Editors / IDE
+.vscode/
+.idea/
+*.iml
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Project-specific kept from repo
+config.py
+**/**.db
