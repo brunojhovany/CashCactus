@@ -394,6 +394,9 @@
             {% if current_user.is_authenticated %}
             <div class="user-dropdown">
                 <div class="dropdown">
+                    <button class="btn user-btn me-2" id="themeToggleBtn" type="button" title="Cambiar tema">
+                        <span class="material-icons" id="themeToggleIcon" style="font-size: 18px;">dark_mode</span>
+                    </button>
                     <button class="btn user-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <span class="material-icons" style="font-size: 18px; margin-right: 8px;">account_circle</span>
                         {{ current_user.get_full_name() }}
@@ -521,6 +524,32 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
+        // Theme persistence
+        (function() {
+            const root = document.documentElement;
+            const btn = document.getElementById('themeToggleBtn');
+            const icon = document.getElementById('themeToggleIcon');
+            const stored = localStorage.getItem('theme');
+            if (stored === 'dark') {
+                root.setAttribute('data-theme', 'dark');
+                if (icon) icon.textContent = 'light_mode';
+            }
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    const isDark = root.getAttribute('data-theme') === 'dark';
+                    if (isDark) {
+                        root.removeAttribute('data-theme');
+                        localStorage.setItem('theme', 'light');
+                        if (icon) icon.textContent = 'dark_mode';
+                    } else {
+                        root.setAttribute('data-theme', 'dark');
+                        localStorage.setItem('theme', 'dark');
+                        if (icon) icon.textContent = 'light_mode';
+                    }
+                });
+            }
+        })();
+
         // Auto-cerrar alertas después de 5 segundos
         setTimeout(function() {
             const alerts = document.querySelectorAll('.alert-dismissible');

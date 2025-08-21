@@ -17,6 +17,14 @@
   --pm-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
 }
 
+/* Dark mode overrides */
+[data-theme="dark"] {
+  --pm-surface: #0f172a; /* slate-900 */
+  --pm-text: #e5e7eb; /* gray-200 */
+  --pm-muted: #94a3b8; /* slate-400 */
+  --pm-border: #1f2937; /* gray-800 */
+}
+
 /* Container and spacing */
 .pm-container {
   max-width: 1200px;
@@ -88,6 +96,10 @@
 }
 .pm-table tbody td { border-top: 1px solid var(--pm-border); padding: 12px; }
 
+[data-theme="dark"] .pm-table thead th {
+  background: #0b1220; /* dark row */
+}
+
 /* Utilities */
 .pm-muted { color: var(--pm-muted); }
 .pm-kpi { font-size: 28px; font-weight: 800; }
@@ -113,6 +125,10 @@
   border: 1px solid var(--pm-border);
   background: #f3f7ff;
   color: var(--pm-primary);
+}
+
+[data-theme="dark"] .modern-sidebar .nav-link.active {
+  background: rgba(37, 99, 235, 0.15);
 }
 
 /* Flash alerts minimal */
