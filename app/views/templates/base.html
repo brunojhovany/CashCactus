@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Finanzas Personales{% endblock %}</title>
+    <title>{% block title %}CashCactus{% endblock %}</title>
     
     <!-- Material Design Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
@@ -15,9 +15,9 @@
     
     <style>
         :root {
-            --primary-color: #1976d2;
-            --primary-dark: #1565c0;
-            --primary-light: #42a5f5;
+            --primary-color: #2e7d32; /* cactus */
+            --primary-dark: #1b5e20;
+            --primary-light: #66bb6a;
             --secondary-color: #424242;
             --background-color: #fafafa;
             --surface-color: #ffffff;
@@ -50,7 +50,7 @@
 
         /* Header moderno */
         .modern-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
             box-shadow: var(--shadow-2);
             position: fixed;
             top: 0;
@@ -387,8 +387,8 @@
     <header class="modern-header">
         <div class="header-content">
             <a href="{{ url_for('main.dashboard') }}" class="logo">
-                <span class="material-icons">account_balance_wallet</span>
-                Finanzas App
+                <span class="material-icons">local_florist</span>
+                CashCactus
             </a>
             {% if current_user.is_authenticated %}
             <div class="user-dropdown">
