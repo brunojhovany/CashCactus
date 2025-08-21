@@ -5,15 +5,12 @@
 {% block content %}
 <div class="row justify-content-center min-vh-100 align-items-center">
     <div class="col-md-8 col-lg-6">
-        <div class="card shadow">
-            <div class="card-header text-center bg-success text-white">
-                <h4 class="mb-0">
-                    <i class="fas fa-user-plus me-2"></i>Crear Cuenta
-                </h4>
+        <div class="pm-card pm-card-hover">
+            <div class="pm-card-header text-center">
+                <h4 class="mb-0">Crear Cuenta</h4>
             </div>
-            <div class="card-body p-4">
-                <h5 class="card-title text-center mb-4">Registro de Usuario</h5>
-                
+            <div class="pm-card-body">
+                <h5 class="text-center mb-4">Registro de Usuario</h5>
                 <form method="POST">
                     <div class="row">
                         <div class="col-md-6">
@@ -29,53 +26,29 @@
                             </div>
                         </div>
                     </div>
-                    
                     <div class="mb-3">
                         <label for="username" class="form-label">Nombre de Usuario</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-user"></i>
-                            </span>
-                            <input type="text" class="form-control" id="username" name="username" required>
-                        </div>
+                        <input type="text" class="form-control" id="username" name="username" required>
                     </div>
-                    
                     <div class="mb-3">
                         <label for="email" class="form-label">Correo Electrónico</label>
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="fas fa-envelope"></i>
-                            </span>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                        </div>
+                        <input type="email" class="form-control" id="email" name="email" required>
                     </div>
-                    
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="password" class="form-label">Contraseña</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-lock"></i>
-                                    </span>
-                                    <input type="password" class="form-control" id="password" name="password" required>
-                                </div>
+                                <input type="password" class="form-control" id="password" name="password" required>
                                 <small class="form-text text-muted">Mínimo 6 caracteres</small>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="confirm_password" class="form-label">Confirmar Contraseña</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-lock"></i>
-                                    </span>
-                                    <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
-                                </div>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
                             </div>
                         </div>
                     </div>
-                    
                     <div class="mb-3">
                         <label for="monthly_income" class="form-label">Ingreso Mensual (Opcional)</label>
                         <div class="input-group">
@@ -84,21 +57,14 @@
                         </div>
                         <small class="form-text text-muted">Esto nos ayudará a generar mejores reportes</small>
                     </div>
-                    
                     <div class="d-grid">
-                        <button type="submit" class="btn btn-success">
-                            <i class="fas fa-user-plus me-2"></i>Crear Cuenta
-                        </button>
+                        <button type="submit" class="pm-btn pm-btn-primary">Crear Cuenta</button>
                     </div>
                 </form>
-                
                 <hr>
-                
                 <div class="text-center">
-                    <p class="mb-0">¿Ya tienes cuenta?</p>
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary">
-                        <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
-                    </a>
+                    <p class="mb-2">¿Ya tienes cuenta?</p>
+                    <a href="{{ url_for('auth.login') }}" class="pm-btn">Iniciar Sesión</a>
                 </div>
             </div>
         </div>
