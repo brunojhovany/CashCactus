@@ -7,10 +7,11 @@ WORKDIR /app
 
 # System dependencies for matplotlib (Agg) and fonts
 RUN apt-get update && apt-get install -y --no-install-recommends \
-	libfreetype6 libpng16-16 fonts-dejavu-core \
-	&& rm -rf /var/lib/apt/lists/*
+	libfreetype6 libpng16-16 fonts-dejavu-core
 
-RUN apt-get install -y build-essential python3-dev
+RUN apt-get install -y build-essential python3-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 
