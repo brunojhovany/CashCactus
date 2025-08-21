@@ -1,0 +1,119 @@
+/* PaperMark-inspired minimal, clean theme */
+
+:root {
+  --pm-bg: #0b0f1a; /* dark header background (optional sections) */
+  --pm-surface: #ffffff;
+  --pm-muted: #6b7280; /* gray-500 */
+  --pm-text: #111827; /* gray-900 */
+  --pm-border: #e5e7eb; /* gray-200 */
+  --pm-ring: #3b82f6; /* blue-500 */
+  --pm-primary: #2563eb; /* indigo/blue */
+  --pm-primary-600: #1d4ed8;
+  --pm-success: #16a34a; /* green-600 */
+  --pm-danger: #dc2626; /* red-600 */
+  --pm-warning: #f59e0b; /* amber-500 */
+  --pm-radius: 12px;
+  --pm-shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --pm-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+}
+
+/* Container and spacing */
+.pm-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Cards */
+.pm-card {
+  background: var(--pm-surface);
+  border: 1px solid var(--pm-border);
+  border-radius: var(--pm-radius);
+  box-shadow: var(--pm-shadow-sm);
+}
+
+.pm-card-hover:hover {
+  box-shadow: var(--pm-shadow);
+  transform: translateY(-2px);
+  transition: all .2s ease;
+}
+
+.pm-card-header {
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--pm-border);
+  font-weight: 600;
+}
+
+.pm-card-body {
+  padding: 20px;
+}
+
+/* Badges */
+.pm-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.pm-badge-success { background: rgba(22,163,74,.1); color: var(--pm-success); }
+.pm-badge-danger { background: rgba(220,38,38,.1); color: var(--pm-danger); }
+.pm-badge-warning { background: rgba(245,158,11,.12); color: var(--pm-warning); }
+
+/* Buttons */
+.pm-btn {
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-weight: 600;
+  border: 1px solid var(--pm-border);
+  background: white;
+  color: var(--pm-text);
+}
+.pm-btn-primary {
+  background: var(--pm-primary);
+  border-color: var(--pm-primary);
+  color: #fff;
+}
+.pm-btn-primary:hover { background: var(--pm-primary-600); }
+.pm-btn-ghost { background: transparent; }
+
+/* Tables */
+.pm-table { width: 100%; border-collapse: collapse; }
+.pm-table thead th {
+  background: #f9fafb;
+  font-weight: 600;
+  color: var(--pm-text);
+  border-bottom: 1px solid var(--pm-border);
+  padding: 12px;
+}
+.pm-table tbody td { border-top: 1px solid var(--pm-border); padding: 12px; }
+
+/* Utilities */
+.pm-muted { color: var(--pm-muted); }
+.pm-kpi { font-size: 28px; font-weight: 800; }
+.pm-grid-gap { gap: 16px; }
+.pm-rounded { border-radius: var(--pm-radius); }
+.pm-shadow { box-shadow: var(--pm-shadow); }
+
+/* Metric cards line accent */
+.pm-metric {
+  position: relative;
+}
+.pm-metric::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, var(--pm-primary), #60a5fa);
+  border-top-left-radius: var(--pm-radius);
+  border-top-right-radius: var(--pm-radius);
+}
+
+/* Sidebar link emphasis on active */
+.modern-sidebar .nav-link.active {
+  border: 1px solid var(--pm-border);
+  background: #f3f7ff;
+  color: var(--pm-primary);
+}
+
+/* Flash alerts minimal */
+.alert { border: 1px solid var(--pm-border); }

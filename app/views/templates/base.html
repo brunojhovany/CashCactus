@@ -11,6 +11,7 @@
     
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/theme.css') }}" rel="stylesheet">
     
     <style>
         :root {
@@ -510,92 +511,11 @@
             {% endwith %}
 
             <!-- Contenido de la página -->
-            {% block content %}{% endblock %}
+            <div class="pm-container">
+                {% block content %}{% endblock %}
+            </div>
         </div>
     </main>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'transaction' in request.endpoint %}active{% endif %}" href="{{ url_for('main.transactions') }}">
-                                <i class="fas fa-exchange-alt me-2"></i>Transacciones
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'credit' in request.endpoint %}active{% endif %}" href="{{ url_for('main.credit_cards') }}">
-                                <i class="fas fa-credit-card me-2"></i>Tarjetas de Crédito
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'debt' in request.endpoint %}active{% endif %}" href="{{ url_for('main.debt_accounts') }}">
-                                <i class="fas fa-hand-holding-usd me-2 text-danger"></i>Deudas
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'reminder' in request.endpoint %}active{% endif %}" href="{{ url_for('main.reminders') }}">
-                                <i class="fas fa-bell me-2"></i>Recordatorios
-                            </a>
-                        </li>
-                    </ul>
-
-                    <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
-                        <span>Reportes</span>
-                    </h6>
-                    <ul class="nav flex-column mb-2">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'main.monthly_report' %}active{% endif %}" href="{{ url_for('main.monthly_report') }}">
-                                <i class="fas fa-calendar-alt me-2"></i>Reporte Mensual
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'main.quarterly_report' %}active{% endif %}" href="{{ url_for('main.quarterly_report') }}">
-                                <i class="fas fa-chart-bar me-2"></i>Reporte Trimestral
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'main.annual_summary' %}active{% endif %}" href="{{ url_for('main.annual_summary') }}">
-                                <i class="fas fa-chart-pie me-2"></i>Resumen Anual
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'main.debt_analysis' %}active{% endif %}" href="{{ url_for('main.debt_analysis') }}">
-                                <i class="fas fa-analytics me-2"></i>Análisis de Deudas
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-            {% endif %}
-
-            <!-- Contenido principal -->
-            <main class="{% if current_user.is_authenticated %}col-md-9 ms-sm-auto col-lg-10 px-md-4{% else %}col-12{% endif %}">
-                <!-- Mensajes flash -->
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="alert-container mt-3">
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                                    {% if category == 'success' %}
-                                        <i class="fas fa-check-circle me-2"></i>
-                                    {% elif category == 'error' %}
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                    {% elif category == 'warning' %}
-                                        <i class="fas fa-exclamation-circle me-2"></i>
-                                    {% else %}
-                                        <i class="fas fa-info-circle me-2"></i>
-                                    {% endif %}
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-
-                <!-- Contenido de la página -->
-                {% block content %}{% endblock %}
-            </main>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Bootstrap JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
