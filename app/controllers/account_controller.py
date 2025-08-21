@@ -26,7 +26,14 @@ class AccountController:
             try:
                 name = request.form.get('name')
                 account_type = request.form.get('account_type')
-                initial_balance = float(request.form.get('initial_balance', 0))
+                # Soportar tanto 'initial_balance' como 'balance' desde el formulario
+                _ib_raw = request.form.get('initial_balance')
+                if _ib_raw is None or _ib_raw == '':
+                    _ib_raw = request.form.get('balance', 0)
+                try:
+                    initial_balance = float(_ib_raw) if _ib_raw not in (None, '') else 0.0
+                except ValueError:
+                    initial_balance = 0.0
                 bank_name = request.form.get('bank_name')
                 account_number = request.form.get('account_number')
                 
@@ -103,7 +110,14 @@ class AccountController:
             try:
                 # Obtener el balance anterior para calcular diferencia
                 old_balance = account.balance
-                new_balance = float(request.form.get('initial_balance', 0))
+                # Soportar 'initial_balance' o 'balance' en edición también
+                _nb_raw = request.form.get('initial_balance')
+                if _nb_raw is None or _nb_raw == '':
+                    _nb_raw = request.form.get('balance', 0)
+                try:
+                    new_balance = float(_nb_raw) if _nb_raw not in (None, '') else 0.0
+                except ValueError:
+                    new_balance = old_balance
                 
                 account.name = request.form.get('name')
                 account.account_type = request.form.get('account_type')
