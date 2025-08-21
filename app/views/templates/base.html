@@ -390,7 +390,13 @@
                 <span class="material-icons">account_balance_wallet</span>
                 Finanzas App
             </a>
-            
+            <div class="top-search d-none d-md-block">
+                <input class="pm-search-input" placeholder="Buscar..." />
+            </div>
+            <div class="top-actions">
+                <button class="pm-icon-btn" title="Buscar"><span class="material-icons">search</span></button>
+                <button class="pm-icon-btn" title="Notificaciones"><span class="material-icons">notifications</span></button>
+            </div>
             {% if current_user.is_authenticated %}
             <div class="user-dropdown">
                 <div class="dropdown">
@@ -431,7 +437,7 @@
                 <div class="nav-item">
                     <a class="nav-link {% if request.endpoint == 'main.dashboard' %}active{% endif %}" href="{{ url_for('main.dashboard') }}">
                         <span class="material-icons">dashboard</span>
-                        Dashboard
+                        <span>Dashboard</span>
                     </a>
                 </div>
             </div>
@@ -441,19 +447,19 @@
                 <div class="nav-item">
                     <a class="nav-link {% if 'account' in request.endpoint %}active{% endif %}" href="{{ url_for('main.accounts') }}">
                         <span class="material-icons">account_balance</span>
-                        Cuentas
+                        <span>Cuentas</span>
                     </a>
                 </div>
                 <div class="nav-item">
                     <a class="nav-link {% if 'transaction' in request.endpoint %}active{% endif %}" href="{{ url_for('main.transactions') }}">
                         <span class="material-icons">receipt_long</span>
-                        Transacciones
+                        <span>Transacciones</span>
                     </a>
                 </div>
                 <div class="nav-item">
                     <a class="nav-link {% if 'credit_card' in request.endpoint %}active{% endif %}" href="{{ url_for('main.credit_cards') }}">
                         <span class="material-icons">credit_card</span>
-                        Tarjetas de Crédito
+                        <span>Tarjetas</span>
                     </a>
                 </div>
             </div>
@@ -479,7 +485,7 @@
                 <div class="nav-item">
                     <a class="nav-link {% if 'reminder' in request.endpoint %}active{% endif %}" href="{{ url_for('main.reminders') }}">
                         <span class="material-icons">notification_important</span>
-                        Recordatorios
+                        <span>Recordatorios</span>
                     </a>
                 </div>
             </div>

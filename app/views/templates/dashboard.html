@@ -21,6 +21,50 @@
     </div>
 </div>
 
+<!-- Ticker row -->
+<div class="pm-tickers mb-4">
+    <div class="pm-ticker">
+        <div class="pm-ticker-top">
+            <span class="pm-list-title">Ingresos</span>
+            <span class="pm-chip">Mes</span>
+        </div>
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="pm-kpi">${{ "%.2f"|format(monthly_summary.total_income) }}</div>
+            <div class="pm-spark w-50"></div>
+        </div>
+    </div>
+    <div class="pm-ticker">
+        <div class="pm-ticker-top">
+            <span class="pm-list-title">Gastos</span>
+            <span class="pm-chip">Mes</span>
+        </div>
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="pm-kpi">${{ "%.2f"|format(monthly_summary.total_expenses) }}</div>
+            <div class="pm-spark w-50"></div>
+        </div>
+    </div>
+    <div class="pm-ticker">
+        <div class="pm-ticker-top">
+            <span class="pm-list-title">Balance</span>
+            <span class="pm-chip active">Mes</span>
+        </div>
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="pm-kpi">${{ "%.2f"|format(monthly_summary.net_income) }}</div>
+            <div class="pm-spark w-50"></div>
+        </div>
+    </div>
+    <div class="pm-ticker">
+        <div class="pm-ticker-top">
+            <span class="pm-list-title">Deudas</span>
+            <span class="pm-chip">Total</span>
+        </div>
+        <div class="d-flex align-items-center justify-content-between">
+            <div class="pm-kpi">${{ "%.2f"|format(debt_summary.total_debt) }}</div>
+            <div class="pm-spark w-50"></div>
+        </div>
+    </div>
+</div>
+
 <!-- Métricas principales -->
 <div class="row mb-4 g-3">
     <div class="col-lg-3 col-md-6">
@@ -103,70 +147,6 @@
             <a href="{{ url_for('main.monthly_report') }}" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-chart-line me-1"></i>Ver Reportes
             </a>
-        </div>
-    </div>
-</div>
-
-<!-- Resumen Financiero -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-white bg-success mb-3 card-dashboard">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Patrimonio Neto</h6>
-                        <h4 class="mb-0">${{ "%.2f"|format(net_worth.net_worth) }}</h4>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-chart-line fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-info mb-3 card-dashboard">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Ingresos del Mes</h6>
-                        <h4 class="mb-0">${{ "%.2f"|format(monthly_summary.total_income) }}</h4>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-arrow-up fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-warning mb-3 card-dashboard">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Gastos del Mes</h6>
-                        <h4 class="mb-0">${{ "%.2f"|format(monthly_summary.total_expenses) }}</h4>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-arrow-down fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white {% if debt_summary.total_debt > 0 %}bg-danger{% else %}bg-secondary{% endif %} mb-3 card-dashboard">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="card-title">Total Deudas</h6>
-                        <h4 class="mb-0">${{ "%.2f"|format(debt_summary.total_debt) }}</h4>
-                    </div>
-                    <div class="align-self-center">
-                        <i class="fas fa-credit-card fa-2x"></i>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
