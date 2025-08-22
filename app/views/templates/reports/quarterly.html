@@ -1,0 +1,350 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte Trimestral - Finanzas Personales{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">📊 {{ quarter_name }} {{ year }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <a href="{{ url_for('main.monthly_report') }}" class="btn btn-outline-primary">
+                📅 Reporte Mensual
+            </a>
+            <a href="{{ url_for('main.annual_summary') }}" class="btn btn-outline-success">
+                📈 Resumen Anual
+            </a>
+            <a href="{{ url_for('main.income_by_account_report') }}" class="btn btn-outline-info">
+                💰 Ingresos por Cuenta
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen Ejecutivo Trimestral -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h6><span class="material-icons">trending_up</span> Ingresos Totales</h6>
+                <h3>${{ "%.2f"|format(quarterly_data.total_income) }}</h3>
+                <small>Promedio mensual: ${{ "%.2f"|format(quarterly_data.avg_monthly_income) }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <h6><span class="material-icons">trending_down</span> Gastos Totales</h6>
+                <h3>${{ "%.2f"|format(quarterly_data.total_expenses) }}</h3>
+                <small>Promedio mensual: ${{ "%.2f"|format(quarterly_data.avg_monthly_expenses) }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-{% if quarterly_data.net_income >= 0 %}info{% else %}warning{% endif %} text-white">
+            <div class="card-body text-center">
+                <h6><span class="material-icons">account_balance</span> Balance Neto</h6>
+                <h3>${{ "%.2f"|format(quarterly_data.net_income) }}</h3>
+                {% if avg_savings_rate != 0 %}
+                <small>Tasa de ahorro: {{ "%.1f"|format(avg_savings_rate) }}%</small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h6><span class="material-icons">account_balance_wallet</span> Patrimonio Neto</h6>
+                <h3>${{ "%.2f"|format(net_worth.net_worth) }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Análisis de Tendencia Trimestral -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><span class="material-icons">show_chart</span> Tendencia de Ingresos</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    {% if quarterly_data.income_trend > 0 %}
+                        <span class="material-icons text-success me-2" style="font-size: 2rem;">arrow_upward</span>
+                        <div>
+                            <h4 class="text-success mb-0">+${{ "%.2f"|format(quarterly_data.income_trend) }}</h4>
+                            <small class="text-muted">Incremento en el trimestre</small>
+                        </div>
+                    {% elif quarterly_data.income_trend < 0 %}
+                        <span class="material-icons text-danger me-2" style="font-size: 2rem;">arrow_downward</span>
+                        <div>
+                            <h4 class="text-danger mb-0">${{ "%.2f"|format(quarterly_data.income_trend) }}</h4>
+                            <small class="text-muted">Disminución en el trimestre</small>
+                        </div>
+                    {% else %}
+                        <span class="material-icons text-secondary me-2" style="font-size: 2rem;">remove</span>
+                        <div>
+                            <h4 class="text-secondary mb-0">$0.00</h4>
+                            <small class="text-muted">Sin cambios en el trimestre</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><span class="material-icons">trending_down</span> Tendencia de Gastos</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    {% if quarterly_data.expense_trend > 0 %}
+                        <span class="material-icons text-warning me-2" style="font-size: 2rem;">arrow_upward</span>
+                        <div>
+                            <h4 class="text-warning mb-0">+${{ "%.2f"|format(quarterly_data.expense_trend) }}</h4>
+                            <small class="text-muted">Incremento en gastos</small>
+                        </div>
+                    {% elif quarterly_data.expense_trend < 0 %}
+                        <span class="material-icons text-success me-2" style="font-size: 2rem;">arrow_downward</span>
+                        <div>
+                            <h4 class="text-success mb-0">${{ "%.2f"|format(quarterly_data.expense_trend) }}</h4>
+                            <small class="text-muted">Reducción en gastos</small>
+                        </div>
+                    {% else %}
+                        <span class="material-icons text-secondary me-2" style="font-size: 2rem;">remove</span>
+                        <div>
+                            <h4 class="text-secondary mb-0">$0.00</h4>
+                            <small class="text-muted">Sin cambios en gastos</small>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Desglose Mensual del Trimestre -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><span class="material-icons">calendar_month</span> Desglose Mensual del Trimestre</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Mes</th>
+                                <th class="text-end">Ingresos</th>
+                                <th class="text-end">Gastos</th>
+                                <th class="text-end">Balance</th>
+                                <th class="text-end">Transacciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for month_data in quarterly_data.monthly_data %}
+                            <tr>
+                                <td><strong>{{ month_data.month_name }}</strong></td>
+                                <td class="text-end text-success">${{ "%.2f"|format(month_data.total_income) }}</td>
+                                <td class="text-end text-danger">${{ "%.2f"|format(month_data.total_expenses) }}</td>
+                                <td class="text-end {% if month_data.net_income >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    ${{ "%.2f"|format(month_data.net_income) }}
+                                </td>
+                                <td class="text-end">{{ month_data.transaction_count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-dark">
+                            <tr>
+                                <th>TOTAL</th>
+                                <th class="text-end">${{ "%.2f"|format(quarterly_data.total_income) }}</th>
+                                <th class="text-end">${{ "%.2f"|format(quarterly_data.total_expenses) }}</th>
+                                <th class="text-end">${{ "%.2f"|format(quarterly_data.net_income) }}</th>
+                                <th class="text-end">{{ quarterly_data.monthly_data|sum(attribute='transaction_count') }}</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfica de Tendencia Anual -->
+{% if trend_chart %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><span class="material-icons">analytics</span> Tendencia de Ingresos y Gastos {{ year }}</h5>
+            </div>
+            <div class="card-body">
+                <img src="data:image/png;base64,{{ trend_chart }}" class="img-fluid" alt="Tendencia Anual">
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Análisis de Patrimonio -->
+<div class="row mb-4">
+    <!-- Activos vs Pasivos -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><span class="material-icons">pie_chart</span> Distribución de Patrimonio</h5>
+            </div>
+            <div class="card-body">
+                <!-- Resumen numérico -->
+                <div class="text-center">
+                    <div class="row">
+                        <div class="col-6">
+                            <h6 class="text-success">💰 Activos</h6>
+                            <h4 class="mb-0">${{ "%.2f"|format(net_worth.total_assets) }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-danger">💳 Pasivos</h6>
+                            <h4 class="mb-0">${{ "%.2f"|format(net_worth.total_liabilities) }}</h4>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6>💎 Patrimonio Neto</h6>
+                            <h3 class="{% if net_worth.net_worth >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                ${{ "%.2f"|format(net_worth.net_worth) }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Desglose de Deudas -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><span class="material-icons">warning</span> Resumen de Deudas</h5>
+            </div>
+            <div class="card-body">
+                {% if debt_summary.total_debt > 0 %}
+                <div class="text-center">
+                    <div class="row">
+                        <div class="col-6">
+                            <h6 class="text-warning">💳 Tarjetas</h6>
+                            <h4 class="mb-0">${{ "%.2f"|format(debt_summary.credit_card_debt) }}</h4>
+                            <small class="text-muted">{{ debt_summary.credit_card_count }} tarjetas</small>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-danger">📋 Cuentas</h6>
+                            <h4 class="mb-0">${{ "%.2f"|format(debt_summary.account_debt) }}</h4>
+                            <small class="text-muted">{{ debt_summary.debt_account_count }} cuentas</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-12">
+                            <h6 class="text-danger">💸 Total Deudas</h6>
+                            <h3 class="text-danger">${{ "%.2f"|format(debt_summary.total_debt) }}</h3>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center text-success">
+                    <span class="material-icons" style="font-size: 3rem;">check_circle</span>
+                    <h4 class="mt-2">¡Sin deudas pendientes!</h4>
+                    <p class="text-muted">Excelente manejo financiero</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Análisis de Ahorro -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><span class="material-icons">savings</span> Análisis de Ahorro Trimestral</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <h6>Ahorro Total</h6>
+                        <h4 class="{% if quarterly_data.net_income >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            ${{ "%.2f"|format(quarterly_data.net_income) }}
+                        </h4>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Ahorro Mensual Promedio</h6>
+                        <h4 class="{% if (quarterly_data.net_income / 3) >= 0 %}text-success{% else %}text-danger{% endif %}">
+                            ${{ "%.2f"|format(quarterly_data.net_income / 3) }}
+                        </h4>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Tasa de Ahorro</h6>
+                        <h4 class="{% if avg_savings_rate >= 20 %}text-success{% elif avg_savings_rate >= 10 %}text-warning{% else %}text-danger{% endif %}">
+                            {{ "%.1f"|format(avg_savings_rate) }}%
+                        </h4>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Meta Recomendada</h6>
+                        <h4 class="text-info">20%</h4>
+                        <small class="text-muted">Estándar financiero</small>
+                    </div>
+                </div>
+                
+                <!-- Barra de progreso de ahorro -->
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="fw-medium">Progreso hacia meta de ahorro</span>
+                        <span class="text-muted">{{ "%.1f"|format(avg_savings_rate) }}% / 20%</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar {% if avg_savings_rate >= 20 %}bg-success{% elif avg_savings_rate >= 10 %}bg-warning{% else %}bg-danger{% endif %}" 
+                             role="progressbar" 
+                             style="width: {{ (avg_savings_rate / 20 * 100)|min(100) }}%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navegación entre Trimestres -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center">
+                <h6>Navegar por Trimestres</h6>
+                <div class="btn-group" role="group">
+                    {% set prev_quarter = quarter - 1 if quarter > 1 else 4 %}
+                    {% set prev_year = year if quarter > 1 else year - 1 %}
+                    <a href="{{ url_for('main.quarterly_report', year=prev_year, quarter=prev_quarter) }}" 
+                       class="btn btn-outline-secondary">
+                        ← Q{{ prev_quarter }} {{ prev_year }}
+                    </a>
+                    
+                    <a href="{{ url_for('main.quarterly_report') }}" class="btn btn-primary">
+                        Trimestre Actual
+                    </a>
+                    
+                    {% set next_quarter = quarter + 1 if quarter < 4 else 1 %}
+                    {% set next_year = year if quarter < 4 else year + 1 %}
+                    <a href="{{ url_for('main.quarterly_report', year=next_year, quarter=next_quarter) }}" 
+                       class="btn btn-outline-secondary">
+                        Q{{ next_quarter }} {{ next_year }} →
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
