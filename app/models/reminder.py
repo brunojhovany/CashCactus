@@ -24,11 +24,30 @@ class Reminder(db.Model):
     def get_days_until_due(self):
         """Obtener días hasta el vencimiento"""
         today = datetime.now()
-        return (self.due_date - today).days
+        
+        # Handle both date and datetime objects
+        if hasattr(self.due_date, 'date'):
+            # It's a datetime object
+            due_date = self.due_date
+        else:
+            # It's a date object, convert to datetime
+            due_date = datetime.combine(self.due_date, datetime.min.time())
+            
+        return (due_date - today).days
     
     def is_overdue(self):
         """Verificar si está vencido"""
-        return datetime.now() > self.due_date and not self.is_completed
+        now = datetime.now()
+        
+        # Handle both date and datetime objects
+        if hasattr(self.due_date, 'date'):
+            # It's a datetime object
+            due_date = self.due_date
+        else:
+            # It's a date object, convert to datetime
+            due_date = datetime.combine(self.due_date, datetime.min.time())
+            
+        return now > due_date and not self.is_completed
     
     def is_due_soon(self, days_ahead=3):
         """Verificar si vence pronto"""
