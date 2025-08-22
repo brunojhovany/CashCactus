@@ -14,10 +14,10 @@
     </div>
 </div>
 
-{% if overdue_reminders %}
 <div class="mb-4">
     <h5 class="text-danger"><span class="material-icons me-2">warning</span>Recordatorios Vencidos</h5>
     <div class="row">
+        {% if overdue_reminders %}
         {% for reminder in overdue_reminders %}
         <div class="col-md-6 col-lg-4 mb-3">
             <div class="card border-danger">
@@ -64,14 +64,21 @@
             </div>
         </div>
         {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-light border text-center py-4 mb-0">
+                <span class="material-icons align-middle me-1 text-danger">check_circle</span>
+                <span class="align-middle">No hay recordatorios vencidos 🎉</span>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
-{% endif %}
 
-{% if upcoming_reminders %}
 <div class="mb-4">
     <h5 class="text-warning"><span class="material-icons me-2">schedule</span>Próximos Vencimientos</h5>
     <div class="row">
+        {% if upcoming_reminders %}
         {% for reminder in upcoming_reminders %}
         <div class="col-md-6 col-lg-4 mb-3">
             <div class="card border-warning">
@@ -118,14 +125,21 @@
             </div>
         </div>
         {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-light border text-center py-4 mb-0">
+                <span class="material-icons align-middle me-1 text-warning">event_available</span>
+                <span class="align-middle">Sin vencimientos próximos</span>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
-{% endif %}
 
-{% if pending_reminders and not (overdue_reminders or upcoming_reminders) %}
 <div class="mb-4">
     <h5 class="text-info"><span class="material-icons me-2">notifications</span>Otros Recordatorios</h5>
     <div class="row">
+        {% if pending_reminders %}
         {% for reminder in pending_reminders %}
         <div class="col-md-6 col-lg-4 mb-3">
             <div class="card border-{% if reminder.is_overdue() %}danger{% elif reminder.is_due_soon() %}warning{% else %}secondary{% endif %}">
@@ -178,6 +192,14 @@
             </div>
         </div>
         {% endfor %}
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-light border text-center py-4 mb-0">
+                <span class="material-icons align-middle me-1 text-info">notifications_off</span>
+                <span class="align-middle">No hay otros recordatorios pendientes</span>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% if not (overdue_reminders or upcoming_reminders or pending_reminders) %}

@@ -90,6 +90,8 @@ class ReportController:
         avg_savings_rate = 0
         if quarterly_data['avg_monthly_income'] > 0:
             avg_savings_rate = ((quarterly_data['avg_monthly_income'] - quarterly_data['avg_monthly_expenses']) / quarterly_data['avg_monthly_income']) * 100
+        # Progreso hacia la meta de ahorro del 20% (cap entre 0 y 100)
+        savings_progress = max(0, min((avg_savings_rate / 20) * 100, 100))
         
         quarter_names = {
             1: 'Primer Trimestre (Ene-Mar)',
@@ -99,14 +101,15 @@ class ReportController:
         }
         
         return render_template('reports/quarterly.html',
-                             year=year,
-                             quarter=quarter,
-                             quarter_name=quarter_names.get(quarter, f'Trimestre {quarter}'),
-                             quarterly_data=quarterly_data,
-                             debt_summary=debt_summary,
-                             net_worth=net_worth,
-                             trend_chart=trend_chart,
-                             avg_savings_rate=avg_savings_rate)
+                               year=year,
+                               quarter=quarter,
+                               quarter_name=quarter_names.get(quarter, f'Trimestre {quarter}'),
+                               quarterly_data=quarterly_data,
+                               debt_summary=debt_summary,
+                               net_worth=net_worth,
+                               trend_chart=trend_chart,
+                               avg_savings_rate=avg_savings_rate,
+                               savings_progress=savings_progress)
     
     @staticmethod
     @login_required
