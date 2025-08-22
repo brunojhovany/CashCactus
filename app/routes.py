@@ -251,7 +251,7 @@ def edit_reminder(reminder_id):
         try:
             reminder.title = request.form['title']
             reminder.description = request.form.get('description', '')
-            reminder.due_date = datetime.strptime(request.form['due_date'], '%Y-%m-%d').date()
+            reminder.due_date = datetime.strptime(request.form['due_date'], '%Y-%m-%d')
             reminder.amount = float(request.form['amount'])
             
             db.session.commit()

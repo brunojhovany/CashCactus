@@ -8,74 +8,185 @@
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
             <a href="{{ url_for('main.create_reminder') }}" class="btn btn-primary">
-                <i class="fas fa-plus me-1"></i>Nuevo Recordatorio
+                <span class="material-icons me-1">add</span>Nuevo Recordatorio
             </a>
         </div>
     </div>
 </div>
 
-{% if reminders %}
-<div class="row">
-    {% for reminder in reminders %}
-    <div class="col-md-6 col-lg-4 mb-3">
-        <div class="card border-{% if reminder.is_overdue() %}danger{% elif reminder.is_due_soon() %}warning{% else %}secondary{% endif %}">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title">{{ reminder.title }}</h6>
-                    <span class="badge bg-{{ reminder.get_priority_class() }}">
-                        {{ reminder.get_type_display() }}
-                    </span>
-                </div>
-                
-                {% if reminder.description %}
-                <p class="card-text text-muted">{{ reminder.description }}</p>
-                {% endif %}
-                
-                <div class="mb-2">
-                    <small class="text-muted">Vencimiento:</small>
-                    <p class="mb-0">{{ reminder.due_date.strftime('%d/%m/%Y') }}</p>
-                    {% if reminder.is_overdue() %}
+{% if overdue_reminders %}
+<div class="mb-4">
+    <h5 class="text-danger"><span class="material-icons me-2">warning</span>Recordatorios Vencidos</h5>
+    <div class="row">
+        {% for reminder in overdue_reminders %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card border-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title">{{ reminder.title }}</h6>
+                        <span class="badge bg-{{ reminder.get_priority_class() }}">
+                            {{ reminder.get_type_display() }}
+                        </span>
+                    </div>
+                    
+                    {% if reminder.description %}
+                    <p class="card-text text-muted">{{ reminder.description }}</p>
+                    {% endif %}
+                    
+                    <div class="mb-2">
+                        <small class="text-muted">Vencimiento:</small>
+                        <p class="mb-0">{{ reminder.due_date.strftime('%d/%m/%Y') }}</p>
                         <small class="text-danger">Vencido hace {{ reminder.get_days_until_due() * -1 }} días</small>
-                    {% elif reminder.is_due_soon() %}
-                        <small class="text-warning">Vence en {{ reminder.get_days_until_due() }} días</small>
-                    {% else %}
-                        <small class="text-muted">En {{ reminder.get_days_until_due() }} días</small>
+                    </div>
+                    
+                    {% if reminder.amount %}
+                    <div class="mb-3">
+                        <small class="text-muted">Monto:</small>
+                        <h6>${{ "%.2f"|format(reminder.amount) }}</h6>
+                    </div>
                     {% endif %}
-                </div>
-                
-                {% if reminder.amount %}
-                <div class="mb-3">
-                    <small class="text-muted">Monto:</small>
-                    <h6>${{ "%.2f"|format(reminder.amount) }}</h6>
-                </div>
-                {% endif %}
-                
-                <div class="d-flex gap-2">
-                    {% if not reminder.is_completed %}
-                    <button class="btn btn-sm btn-success" onclick="markCompleted({{ reminder.id }})">
-                        <i class="fas fa-check"></i>
-                    </button>
-                    {% endif %}
-                    <a href="{{ url_for('main.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-edit"></i>
-                    </a>
-                    <button type="button" class="btn btn-sm btn-outline-danger"
-                            onclick="deleteReminder('{{ url_for('main.delete_reminder', reminder_id=reminder.id) }}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    
+                    <div class="d-flex gap-2">
+                        {% if not reminder.is_completed %}
+                        <button class="btn btn-sm btn-success" onclick="markCompleted({{ reminder.id }})">
+                            <span class="material-icons">check</span>
+                        </button>
+                        {% endif %}
+                        <a href="{{ url_for('main.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
+                            <span class="material-icons">edit</span>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="deleteReminder('{{ url_for('main.delete_reminder', reminder_id=reminder.id) }}')">
+                            <span class="material-icons">delete</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </div>
-{% else %}
+{% endif %}
+
+{% if upcoming_reminders %}
+<div class="mb-4">
+    <h5 class="text-warning"><span class="material-icons me-2">schedule</span>Próximos Vencimientos</h5>
+    <div class="row">
+        {% for reminder in upcoming_reminders %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title">{{ reminder.title }}</h6>
+                        <span class="badge bg-{{ reminder.get_priority_class() }}">
+                            {{ reminder.get_type_display() }}
+                        </span>
+                    </div>
+                    
+                    {% if reminder.description %}
+                    <p class="card-text text-muted">{{ reminder.description }}</p>
+                    {% endif %}
+                    
+                    <div class="mb-2">
+                        <small class="text-muted">Vencimiento:</small>
+                        <p class="mb-0">{{ reminder.due_date.strftime('%d/%m/%Y') }}</p>
+                        <small class="text-warning">Vence en {{ reminder.get_days_until_due() }} días</small>
+                    </div>
+                    
+                    {% if reminder.amount %}
+                    <div class="mb-3">
+                        <small class="text-muted">Monto:</small>
+                        <h6>${{ "%.2f"|format(reminder.amount) }}</h6>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        {% if not reminder.is_completed %}
+                        <button class="btn btn-sm btn-success" onclick="markCompleted({{ reminder.id }})">
+                            <span class="material-icons">check</span>
+                        </button>
+                        {% endif %}
+                        <a href="{{ url_for('main.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
+                            <span class="material-icons">edit</span>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="deleteReminder('{{ url_for('main.delete_reminder', reminder_id=reminder.id) }}')">
+                            <span class="material-icons">delete</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if pending_reminders and not (overdue_reminders or upcoming_reminders) %}
+<div class="mb-4">
+    <h5 class="text-info"><span class="material-icons me-2">notifications</span>Otros Recordatorios</h5>
+    <div class="row">
+        {% for reminder in pending_reminders %}
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card border-{% if reminder.is_overdue() %}danger{% elif reminder.is_due_soon() %}warning{% else %}secondary{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h6 class="card-title">{{ reminder.title }}</h6>
+                        <span class="badge bg-{{ reminder.get_priority_class() }}">
+                            {{ reminder.get_type_display() }}
+                        </span>
+                    </div>
+                    
+                    {% if reminder.description %}
+                    <p class="card-text text-muted">{{ reminder.description }}</p>
+                    {% endif %}
+                    
+                    <div class="mb-2">
+                        <small class="text-muted">Vencimiento:</small>
+                        <p class="mb-0">{{ reminder.due_date.strftime('%d/%m/%Y') }}</p>
+                        {% if reminder.is_overdue() %}
+                            <small class="text-danger">Vencido hace {{ reminder.get_days_until_due() * -1 }} días</small>
+                        {% elif reminder.is_due_soon() %}
+                            <small class="text-warning">Vence en {{ reminder.get_days_until_due() }} días</small>
+                        {% else %}
+                            <small class="text-muted">En {{ reminder.get_days_until_due() }} días</small>
+                        {% endif %}
+                    </div>
+                    
+                    {% if reminder.amount %}
+                    <div class="mb-3">
+                        <small class="text-muted">Monto:</small>
+                        <h6>${{ "%.2f"|format(reminder.amount) }}</h6>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-flex gap-2">
+                        {% if not reminder.is_completed %}
+                        <button class="btn btn-sm btn-success" onclick="markCompleted({{ reminder.id }})">
+                            <span class="material-icons">check</span>
+                        </button>
+                        {% endif %}
+                        <a href="{{ url_for('main.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
+                            <span class="material-icons">edit</span>
+                        </a>
+                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                onclick="deleteReminder('{{ url_for('main.delete_reminder', reminder_id=reminder.id) }}')">
+                            <span class="material-icons">delete</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% if not (overdue_reminders or upcoming_reminders or pending_reminders) %}
 <div class="text-center py-5">
-    <i class="fas fa-bell fa-4x text-muted mb-3"></i>
+    <span class="material-icons" style="font-size: 4rem;">notifications</span>
     <h4 class="text-muted">No tienes recordatorios</h4>
     <p class="text-muted">Crea recordatorios para no olvidar pagos importantes</p>
     <a href="{{ url_for('main.create_reminder') }}" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i>Crear Recordatorio
+        <span class="material-icons me-1">add</span>Crear Recordatorio
     </a>
 </div>
 {% endif %}

@@ -158,13 +158,13 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">
-                    <i class="fas fa-bell me-2"></i>Recordatorios y Alertas
+                    <span class="material-icons me-2">notifications</span>Recordatorios y Alertas
                 </h5>
             </div>
             <div class="card-body">
                 {% if overdue_reminders %}
                     <div class="alert alert-danger">
-                        <h6><i class="fas fa-exclamation-triangle me-2"></i>Recordatorios Vencidos</h6>
+                        <h6><span class="material-icons me-2">warning</span>Recordatorios Vencidos</h6>
                         {% for reminder in overdue_reminders[:3] %}
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span>{{ reminder.title }}</span>
@@ -184,7 +184,7 @@
 
                 {% if upcoming_reminders %}
                     <div class="alert alert-warning">
-                        <h6><i class="fas fa-clock me-2"></i>Próximos Vencimientos</h6>
+                        <h6><span class="material-icons me-2">schedule</span>Próximos Vencimientos</h6>
                         {% for reminder in upcoming_reminders[:3] %}
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span>{{ reminder.title }}</span>
