@@ -306,9 +306,10 @@
                         <span class="text-muted">{{ "%.1f"|format(avg_savings_rate) }}% / 20%</span>
                     </div>
                     <div class="progress" style="height: 10px;">
-                        <div class="progress-bar {% if avg_savings_rate >= 20 %}bg-success{% elif avg_savings_rate >= 10 %}bg-warning{% else %}bg-danger{% endif %}" 
-                             role="progressbar" 
-                             style="width: {{ (avg_savings_rate / 20 * 100)|min(100) }}%">
+                        {# Jinja's min filter expects an iterable; previous usage (value|min(100)) caused TypeError on float #}
+                    <div class="progress-bar {% if avg_savings_rate >= 20 %}bg-success{% elif avg_savings_rate >= 10 %}bg-warning{% else %}bg-danger{% endif %}" 
+                        role="progressbar" 
+                        style="width: {{ savings_progress }}%">
                         </div>
                     </div>
                 </div>
