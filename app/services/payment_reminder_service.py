@@ -2,6 +2,8 @@ from datetime import datetime, timedelta
 from app import db
 from app.models.reminder import Reminder
 from app.models.credit_card import CreditCard
+from flask_login import current_user
+from flask import abort
 
 class PaymentReminderService:
     """Servicio para manejar recordatorios de pagos"""
@@ -91,12 +93,12 @@ class PaymentReminderService:
     @staticmethod
     def mark_reminder_completed(reminder_id):
         """Marcar un recordatorio como completado"""
-        reminder = Reminder.query.get(reminder_id)
-        if reminder:
-            reminder.mark_completed()
-            db.session.commit()
-            return True
-        return False
+        reminder = Reminder.query.filter_by(id=reminder_id, user_id=current_user.id).first()
+        if not reminder:
+            abort(404)
+        reminder.mark_completed()
+        db.session.commit()
+        return True
     
     @staticmethod
     def update_all_credit_card_reminders():
@@ -116,9 +118,9 @@ class PaymentReminderService:
     @staticmethod
     def delete_reminder(reminder_id):
         """Eliminar un recordatorio"""
-        reminder = Reminder.query.get(reminder_id)
-        if reminder:
-            db.session.delete(reminder)
-            db.session.commit()
-            return True
-        return False
+        reminder = Reminder.query.filter_by(id=reminder_id, user_id=current_user.id).first()
+        if not reminder:
+            abort(404)
+        db.session.delete(reminder)
+        db.session.commit()
+        return True

@@ -7,7 +7,7 @@
     <h1 class="h2">Recordatorios</h1>
     <div class="btn-toolbar mb-2 mb-md-0">
         <div class="btn-group me-2">
-            <a href="{{ url_for('main.create_reminder') }}" class="btn btn-primary">
+            <a href="{{ url_for('reminders.create_reminder') }}" class="btn btn-primary">
                 <span class="material-icons me-1">add</span>Nuevo Recordatorio
             </a>
         </div>
@@ -52,11 +52,11 @@
                             <span class="material-icons">check</span>
                         </button>
                         {% endif %}
-                        <a href="{{ url_for('main.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ url_for('reminders.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
                             <span class="material-icons">edit</span>
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-danger"
-                                onclick="deleteReminder('{{ url_for('main.delete_reminder', reminder_id=reminder.id) }}')">
+                                onclick="deleteReminder('{{ url_for('reminders.delete_reminder', reminder_id=reminder.id) }}')">
                             <span class="material-icons">delete</span>
                         </button>
                     </div>
@@ -113,11 +113,11 @@
                             <span class="material-icons">check</span>
                         </button>
                         {% endif %}
-                        <a href="{{ url_for('main.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ url_for('reminders.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
                             <span class="material-icons">edit</span>
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-danger"
-                                onclick="deleteReminder('{{ url_for('main.delete_reminder', reminder_id=reminder.id) }}')">
+                                onclick="deleteReminder('{{ url_for('reminders.delete_reminder', reminder_id=reminder.id) }}')">
                             <span class="material-icons">delete</span>
                         </button>
                     </div>
@@ -180,11 +180,11 @@
                             <span class="material-icons">check</span>
                         </button>
                         {% endif %}
-                        <a href="{{ url_for('main.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
+                        <a href="{{ url_for('reminders.edit_reminder', reminder_id=reminder.id) }}" class="btn btn-sm btn-outline-primary">
                             <span class="material-icons">edit</span>
                         </a>
                         <button type="button" class="btn btn-sm btn-outline-danger"
-                                onclick="deleteReminder('{{ url_for('main.delete_reminder', reminder_id=reminder.id) }}')">
+                                onclick="deleteReminder('{{ url_for('reminders.delete_reminder', reminder_id=reminder.id) }}')">
                             <span class="material-icons">delete</span>
                         </button>
                     </div>
@@ -207,7 +207,7 @@
     <span class="material-icons" style="font-size: 4rem;">notifications</span>
     <h4 class="text-muted">No tienes recordatorios</h4>
     <p class="text-muted">Crea recordatorios para no olvidar pagos importantes</p>
-    <a href="{{ url_for('main.create_reminder') }}" class="btn btn-primary">
+    <a href="{{ url_for('reminders.create_reminder') }}" class="btn btn-primary">
         <span class="material-icons me-1">add</span>Crear Recordatorio
     </a>
 </div>

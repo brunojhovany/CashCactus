@@ -3,6 +3,10 @@ from flask_login import login_required, current_user
 from app.models.transaction import Transaction
 from app.models.account import Account
 from app.models.credit_card import CreditCard
+from app.utils.security import (
+    ensure_transaction_account_ownership,
+    ensure_transaction_credit_card_ownership
+)
 from app import db
 from datetime import datetime
 
@@ -136,10 +140,14 @@ class TransactionController:
                     return redirect(url_for('main.create_transaction'))
                 
                 # Crear transacción
+                # Validar propiedad de cuenta / tarjeta
+                _account = ensure_transaction_account_ownership(int(account_id)) if account_id else None
+                _card = ensure_transaction_credit_card_ownership(int(credit_card_id)) if credit_card_id else None
+
                 transaction = Transaction(
                     user_id=current_user.id,
-                    account_id=int(account_id) if account_id else None,
-                    credit_card_id=int(credit_card_id) if credit_card_id else None,
+                    account_id=_account.id if _account else None,
+                    credit_card_id=_card.id if _card else None,
                     amount=amount,
                     description=description,
                     category=category,
@@ -157,19 +165,16 @@ class TransactionController:
                 db.session.add(transaction)
                 
                 # Actualizar balance de cuenta usando el método update_balance
-                if account_id:
-                    account = Account.query.get(account_id)
-                    if account:
-                        account.update_balance()
+                if _account:
+                    _account.update_balance()
                 
                 # Actualizar balance de tarjeta de crédito
-                elif credit_card_id:
-                    credit_card = CreditCard.query.get(credit_card_id)
+                elif _card:
                     if transaction_type == 'expense':
-                        credit_card.current_balance += amount
+                        _card.current_balance += amount
                     elif transaction_type == 'income':  # Pago de tarjeta
-                        credit_card.current_balance -= amount
-                        credit_card.update_minimum_payment()
+                        _card.current_balance -= amount
+                        _card.update_minimum_payment()
                 
                 db.session.commit()
                 flash('Transacción registrada exitosamente.', 'success')
@@ -202,7 +207,7 @@ class TransactionController:
     def edit_transaction(transaction_id):
         """Editar transacción existente"""
         transaction = Transaction.query.filter_by(id=transaction_id, user_id=current_user.id).first_or_404()
-        
+
         if request.method == 'POST':
             try:
                 # Guardar información anterior para recalcular balances
@@ -210,88 +215,89 @@ class TransactionController:
                 old_credit_card_id = transaction.credit_card_id
                 old_amount = transaction.amount
                 old_type = transaction.transaction_type
-                
-                # Actualizar transacción
+
+                # Actualizar transacción (validando pertenencia de nuevos recursos)
+                new_account_id = request.form.get('account_id')
+                new_card_id = request.form.get('credit_card_id')
+
                 transaction.transaction_type = request.form.get('transaction_type')
                 transaction.amount = float(request.form.get('amount'))
                 transaction.description = request.form.get('description')
                 transaction.category = request.form.get('category')
-                transaction.account_id = int(request.form.get('account_id')) if request.form.get('account_id') else None
-                transaction.credit_card_id = int(request.form.get('credit_card_id')) if request.form.get('credit_card_id') else None
+                transaction.account_id = ensure_transaction_account_ownership(int(new_account_id)).id if new_account_id else None
+                transaction.credit_card_id = ensure_transaction_credit_card_ownership(int(new_card_id)).id if new_card_id else None
                 transaction.notes = request.form.get('notes')
-                
+
                 date = request.form.get('date')
                 if date:
                     transaction.date = datetime.strptime(date, '%Y-%m-%d')
-                
+
                 db.session.commit()
-                
+
                 # Recalcular balances para todas las cuentas afectadas
                 affected_accounts = set()
                 if old_account_id:
                     affected_accounts.add(old_account_id)
                 if transaction.account_id:
                     affected_accounts.add(transaction.account_id)
-                
-                # Actualizar balance de todas las cuentas afectadas
-                for account_id in affected_accounts:
-                    account = Account.query.get(account_id)
-                    if account:
+
+                for acc_id in affected_accounts:
+                    account = Account.query.get(acc_id)
+                    if account and account.user_id == current_user.id:
                         account.update_balance()
-                
-                # Manejar tarjetas de crédito (lógica más compleja para recalcular)
+
+                # Manejar tarjetas de crédito
                 if old_credit_card_id and old_credit_card_id != transaction.credit_card_id:
-                    # Revertir transacción anterior en tarjeta antigua
-                    credit_card = CreditCard.query.get(old_credit_card_id)
-                    if old_type == 'expense':
-                        credit_card.current_balance -= old_amount
-                    elif old_type == 'income':
-                        credit_card.current_balance += old_amount
-                    credit_card.update_minimum_payment()
-                
+                    old_card = CreditCard.query.get(old_credit_card_id)
+                    if old_card and old_card.user_id == current_user.id:
+                        if old_type == 'expense':
+                            old_card.current_balance -= old_amount
+                        elif old_type == 'income':
+                            old_card.current_balance += old_amount
+                        old_card.update_minimum_payment()
+
                 if transaction.credit_card_id:
-                    # Aplicar nueva transacción en tarjeta
-                    credit_card = CreditCard.query.get(transaction.credit_card_id)
-                    if transaction.transaction_type == 'expense':
-                        credit_card.current_balance += transaction.amount
-                    elif transaction.transaction_type == 'income':
-                        credit_card.current_balance -= transaction.amount
-                        credit_card.update_minimum_payment()
-                
+                    new_card = CreditCard.query.get(transaction.credit_card_id)
+                    if new_card and new_card.user_id == current_user.id:
+                        if transaction.transaction_type == 'expense':
+                            new_card.current_balance += transaction.amount
+                        elif transaction.transaction_type == 'income':
+                            new_card.current_balance -= transaction.amount
+                            new_card.update_minimum_payment()
+
                 db.session.commit()
                 flash('Transacción actualizada exitosamente.', 'success')
                 return redirect(url_for('main.transactions'))
-                
-            except Exception as e:
+
+            except Exception:
                 db.session.rollback()
                 flash('Error al actualizar la transacción.', 'error')
-        
+
         accounts = Account.query.filter_by(user_id=current_user.id, is_active=True).all()
         credit_cards = CreditCard.query.filter_by(user_id=current_user.id, is_active=True).all()
-        
         categories = get_transaction_categories()
-        
+
         return render_template('transactions/edit.html',
-                             transaction=transaction,
-                             accounts=accounts,
-                             credit_cards=credit_cards,
-                             categories=categories)
+                               transaction=transaction,
+                               accounts=accounts,
+                               credit_cards=credit_cards,
+                               categories=categories)
     
     @staticmethod
     @login_required
     def delete_transaction(transaction_id):
         """Eliminar transacción con lógica en cascada para actualizar balances"""
         transaction = Transaction.query.filter_by(id=transaction_id, user_id=current_user.id).first_or_404()
-        
+
         try:
             # Usar el nuevo método que maneja automáticamente todas las actualizaciones
             transaction.delete_with_cascade_update()
-            
+
             db.session.commit()
             flash('Transacción eliminada exitosamente. Balances actualizados automáticamente.', 'success')
-            
+
         except Exception as e:
             db.session.rollback()
             flash(f'Error al eliminar la transacción: {str(e)}', 'error')
-        
+
         return redirect(url_for('main.transactions'))

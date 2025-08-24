@@ -162,8 +162,9 @@ class CreditCardController:
         credit_card = CreditCard.query.filter_by(id=card_id, user_id=current_user.id).first_or_404()
         
         # Obtener transacciones recientes
-        recent_transactions = Transaction.query.filter_by(
-            credit_card_id=card_id
+        recent_transactions = Transaction.query.filter(
+            Transaction.credit_card_id == card_id,
+            Transaction.user_id == current_user.id
         ).order_by(Transaction.date.desc()).limit(20).all()
         
         # Calcular estadísticas del mes actual
@@ -172,6 +173,7 @@ class CreditCardController:
         
         monthly_transactions = Transaction.query.filter(
             Transaction.credit_card_id == card_id,
+            Transaction.user_id == current_user.id,
             Transaction.date >= month_start
         ).all()
         

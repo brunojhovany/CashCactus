@@ -85,6 +85,38 @@
             text-decoration: none;
         }
 
+        .logo-img {
+            height: 40px;
+            width: auto;
+            margin-right: 12px;
+            display: block;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35));
+            transition: transform .25s ease, filter .3s ease;
+        }
+
+        .logo:hover .logo-img {
+            transform: scale(1.05) rotate(-1deg);
+            filter: drop-shadow(0 3px 4px rgba(0,0,0,0.45));
+        }
+
+        .logo-text {
+            font-weight: 700;
+            letter-spacing: .5px;
+            line-height: 1;
+            display: inline-block;
+        }
+
+        /* Móvil: ocultar texto para ganar espacio */
+        @media (max-width: 640px) {
+            .logo-text { display: none; }
+            .logo-img { height: 36px; margin-right: 0; }
+        }
+
+        /* Tema oscuro: aclarar un poco el logo si el PNG es oscuro */
+        [data-theme='dark'] .logo-img {
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)) brightness(1.05);
+        }
+
         .logo .material-icons {
             font-size: 28px;
             margin-right: 12px;
@@ -386,9 +418,9 @@
     <!-- Header moderno -->
     <header class="modern-header">
         <div class="header-content">
-            <a href="{{ url_for('main.dashboard') }}" class="logo">
-                <span class="material-icons">local_florist</span>
-                CashCactus
+            <a href="{{ url_for('main.dashboard') }}" class="logo" aria-label="Ir al dashboard">
+                <img class="logo-img" src="{{ url_for('static', filename='img/cashcactus.png') }}" alt="Logo CashCactus" />
+                <span class="logo-text">CashCactus</span>
             </a>
             {% if current_user.is_authenticated %}
             <div class="user-dropdown">
@@ -476,7 +508,7 @@
             <div class="nav-section">
                 <div class="nav-section-title">Herramientas</div>
                 <div class="nav-item">
-                    <a class="nav-link {% if 'reminder' in request.endpoint %}active{% endif %}" href="{{ url_for('main.reminders') }}">
+                    <a class="nav-link {% if request.endpoint and 'reminders.' in request.endpoint %}active{% endif %}" href="{{ url_for('reminders.list_reminders') }}">
                         <span class="material-icons">notification_important</span>
                         <span>Recordatorios</span>
                     </a>

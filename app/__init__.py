@@ -4,7 +4,11 @@ from flask_login import LoginManager
 from config import Config
 import os
 
-db = SQLAlchemy()
+# Avoid attribute expiration after commit so test fixtures can access model fields
+# without needing an active session context (helps in unit tests where objects
+# are returned outside the app context). Production impact is minimal here and
+# simplifies tests.
+db = SQLAlchemy(session_options={'expire_on_commit': False})
 login_manager = LoginManager()
 
 def create_app():
@@ -26,8 +30,10 @@ def create_app():
     
     # Registro de blueprints
     from app.routes import main_bp, auth_bp
+    from app.controllers.reminder_controller import reminders_bp
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(reminders_bp)
     
     # Filtros personalizados para plantillas
     @app.template_filter('month_name')
@@ -59,6 +65,8 @@ def create_app():
     # Inicializar scheduler para recordatorios
     from app.services.scheduler import init_scheduler
     init_scheduler(app)
+
+    # Las imágenes ahora se sirven desde app/static, no se necesita ruta personalizada
     
     return app
 

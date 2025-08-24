@@ -209,8 +209,9 @@ class AccountController:
         account = Account.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
         
         # Obtener transacciones recientes
-        recent_transactions = Transaction.query.filter_by(
-            account_id=account.id
+        recent_transactions = Transaction.query.filter(
+            Transaction.account_id == account.id,
+            Transaction.user_id == current_user.id
         ).order_by(Transaction.date.desc()).limit(20).all()
         
         # Calcular estadísticas del mes actual
@@ -219,6 +220,7 @@ class AccountController:
         
         monthly_transactions = Transaction.query.filter(
             Transaction.account_id == account.id,
+            Transaction.user_id == current_user.id,
             Transaction.date >= month_start
         ).all()
         

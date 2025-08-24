@@ -50,6 +50,7 @@ class Account(db.Model):
         end_of_month = datetime(year, month + 1, 1) if month < 12 else datetime(year + 1, 1, 1)
         transactions = Transaction.query.filter(
             Transaction.account_id == self.id,
+            Transaction.user_id == self.user_id,
             Transaction.date < end_of_month
         ).all()
         
