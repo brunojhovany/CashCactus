@@ -7,11 +7,14 @@ WORKDIR /app
 
 # System dependencies for matplotlib (Agg) and fonts
 RUN apt-get update && apt-get install -y --no-install-recommends \
-	libfreetype6 libpng16-16 fonts-dejavu-core
+	libfreetype6 libpng16-16 fonts-dejavu-core tzdata
 
 RUN apt-get install -y build-essential python3-dev \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/*
+
+# Variable de entorno TZ opcional (puede ser sobreescrita en despliegue). Por defecto UTC.
+ENV TZ=UTC
 
 COPY requirements.txt .
 
