@@ -75,3 +75,6 @@ Desktop.ini
 # Keep sanitized config.py tracked; do not ignore it
 # Ignore databases inside instance folder only
 instance/*.db
+\n+# Do not track local Helm chart assets
+helm/
+deployment.yaml

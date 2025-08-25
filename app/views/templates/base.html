@@ -33,6 +33,18 @@
             --shadow-3: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
             --border-radius: 8px;
             --border-radius-lg: 12px;
+            --header-h: 64px;
+        }
+
+        [data-theme='dark'] {
+            --background-color: #121212;
+            --surface-color: #1e1e1e;
+            --text-primary: #f1f1f1;
+            --text-secondary: #b3b3b3;
+            --border-color: #2c2c2c;
+            --shadow-1: 0 1px 3px rgba(0,0,0,0.6), 0 1px 2px rgba(0,0,0,0.5);
+            --shadow-2: 0 4px 10px rgba(0,0,0,0.65), 0 2px 4px rgba(0,0,0,0.55);
+            --shadow-3: 0 10px 30px rgba(0,0,0,0.7), 0 6px 12px rgba(0,0,0,0.6);
         }
 
         * {
@@ -50,25 +62,27 @@
 
         /* Header moderno */
         .modern-header {
-            background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
             box-shadow: var(--shadow-2);
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
             z-index: 1000;
-            height: 64px;
+            height: var(--header-h);
             backdrop-filter: blur(10px);
+            transition: transform .45s ease;
         }
+        [data-theme='dark'] .modern-header { background: linear-gradient(135deg, #1d1d1d 0%, #151515 100%); }
+        .modern-header.header-hidden { transform: translateY(-100%); }
 
         .header-content {
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: flex-start;
             height: 100%;
             padding: 0 24px;
             max-width: 1400px;
             margin: 0 auto;
+            gap: 16px;
         }
 
         .logo {
@@ -106,16 +120,26 @@
             display: inline-block;
         }
 
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            min-width: 0; /* allow shrink */
+        }
+
+        /* Truncar nombre usuario si muy largo */
+        .user-btn .username-text { max-width: 140px; display: inline-block; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
         /* Móvil: ocultar texto para ganar espacio */
         @media (max-width: 640px) {
             .logo-text { display: none; }
             .logo-img { height: 36px; margin-right: 0; }
+            .user-btn .username-text { display: none; }
         }
 
         /* Tema oscuro: aclarar un poco el logo si el PNG es oscuro */
-        [data-theme='dark'] .logo-img {
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)) brightness(1.05);
-        }
+    [data-theme='dark'] .logo-img { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.75)) brightness(1.12); }
 
         .logo .material-icons {
             font-size: 28px;
@@ -125,17 +149,19 @@
         /* Sidebar moderno */
         .modern-sidebar {
             position: fixed;
-            top: 64px;
+            top: var(--header-h);
             left: 0;
             width: 280px;
-            height: calc(100vh - 64px);
+            height: calc(100vh - var(--header-h));
             background: var(--surface-color);
             border-right: 1px solid var(--border-color);
             overflow-y: auto;
             z-index: 999;
             transform: translateX(0);
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: transform .3s cubic-bezier(0.4,0,0.2,1), top .45s ease, height .45s ease;
         }
+        [data-theme='dark'] .modern-sidebar { background: #1e1e1e; }
+        body.header-hidden .modern-sidebar { top: 0; height: 100vh; }
 
         .sidebar-content {
             padding: 24px 0;
@@ -170,17 +196,11 @@
             position: relative;
         }
 
-        .nav-link:hover {
-            background-color: rgba(25, 118, 210, 0.08);
-            color: var(--primary-color);
-            text-decoration: none;
-        }
+    .nav-link:hover { background: rgba(0,0,0,0.05); color: var(--primary-color); text-decoration: none; }
+    [data-theme='dark'] .nav-link:hover { background: rgba(255,255,255,0.08); }
 
-        .nav-link.active {
-            background-color: rgba(25, 118, 210, 0.12);
-            color: var(--primary-color);
-            font-weight: 600;
-        }
+    .nav-link.active { background: rgba(50,153,55,0.18); color: var(--primary-color); font-weight: 600; }
+    [data-theme='dark'] .nav-link.active { background: rgba(50,153,55,0.28); }
 
         .nav-link .material-icons {
             margin-right: 16px;
@@ -188,22 +208,20 @@
         }
 
         /* Contenido principal */
-        .main-content {
-            margin-left: var(--sidebar-w, 280px);
-            margin-top: 64px;
-            padding: 32px;
-            min-height: calc(100vh - 64px);
-        }
+    .main-content { margin-left: var(--sidebar-w, 280px); margin-top: var(--header-h); padding: 32px; min-height: calc(100vh - var(--header-h)); transition: margin-top .45s ease; }
+    body.header-hidden .main-content { margin-top: 0; min-height: 100vh; }
 
         /* Cards modernos */
         .modern-card {
             background: var(--surface-color);
             border-radius: var(--border-radius-lg);
             box-shadow: var(--shadow-1);
-            border: none;
+            border: 1px solid var(--border-color);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
         }
+
+        [data-theme='dark'] .modern-card { box-shadow: var(--shadow-1); }
 
         .modern-card:hover {
             box-shadow: var(--shadow-2);
@@ -260,11 +278,13 @@
             border-radius: var(--border-radius-lg);
             padding: 24px;
             box-shadow: var(--shadow-1);
-            border: none;
+            border: 1px solid var(--border-color);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
         }
+
+        [data-theme='dark'] .metric-card { box-shadow: var(--shadow-1); }
 
         .metric-card::before {
             content: '';
@@ -313,8 +333,10 @@
             align-items: center;
             justify-content: center;
             margin-bottom: 16px;
-            background: rgba(25, 118, 210, 0.1);
+            background: rgba(50, 153, 55, 0.15);
         }
+
+        [data-theme='dark'] .metric-icon { background: rgba(50,153,55,0.25); }
 
         .metric-icon .material-icons {
             color: var(--primary-color);
@@ -343,22 +365,11 @@
 
         /* Responsive */
         @media (max-width: 768px) {
-            .modern-sidebar {
-                transform: translateX(-100%);
-            }
-
-            .modern-sidebar.show {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 16px;
-            }
-
-            .header-content {
-                padding: 0 16px;
-            }
+            .modern-sidebar { transform: translateX(-100%); top: 0; height: 100vh; }
+            .modern-sidebar.show { transform: translateX(0); }
+            .main-content { margin-left: 0; padding: 16px; }
+            body.header-hidden .main-content { margin-top: 0; }
+            .header-content { padding: 0 16px; }
         }
 
         /* Alertas modernas */
@@ -382,26 +393,15 @@
             font-weight: 600;
             color: var(--text-primary);
         }
+    [data-theme='dark'] .table thead th { background: #1e1e1e; border-bottom-color: #2c2c2c; }
 
         /* Usuario dropdown */
         .user-dropdown {
             position: relative;
         }
 
-        .user-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: white;
-            border-radius: 50px;
-            padding: 8px 16px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .user-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-        }
+    .user-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #fff; border-radius: 50px; padding: 8px 16px; font-weight: 500; transition: all .2s; }
+    .user-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
 
         /* Animaciones */
         @keyframes fadeIn {
@@ -412,27 +412,73 @@
         .fade-in {
             animation: fadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
+        /* --- Mobile sidebar / menu button additions --- */
+        .mobile-menu-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.12);
+            border: 1px solid rgba(255,255,255,0.25);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            padding: 0;
+            cursor: pointer;
+        }
+        .mobile-menu-btn .material-icons { font-size: 26px; color: #fff; }
+        .mobile-menu-btn:focus { outline: 2px solid #fff; outline-offset: 2px; }
+
+        .sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(2px);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+        .sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: inline-flex; }
+            .modern-sidebar { width: 260px; box-shadow: var(--shadow-3); }
+            body.sidebar-open { overflow: hidden; }
+        }
     </style>
 </head>
 <body>
     <!-- Header moderno -->
     <header class="modern-header">
         <div class="header-content">
+            {% if current_user.is_authenticated %}
+            <button id="mobileMenuBtn" class="mobile-menu-btn me-2" type="button" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">
+                <span class="material-icons">menu</span>
+            </button>
+            {% endif %}
             <a href="{{ url_for('main.dashboard') }}" class="logo" aria-label="Ir al dashboard">
                 <img class="logo-img" src="{{ url_for('static', filename='img/cashcactus.png') }}" alt="Logo CashCactus" />
                 <span class="logo-text">CashCactus</span>
             </a>
             {% if current_user.is_authenticated %}
-            <div class="user-dropdown">
-                <div class="dropdown">
-                    <button class="btn user-btn me-2" id="themeToggleBtn" type="button" title="Cambiar tema">
-                        <span class="material-icons" id="themeToggleIcon" style="font-size: 18px;">dark_mode</span>
+            <div class="header-actions">
+                <div class="dropdown user-dropdown">
+                    <button class="btn user-btn me-1" id="themeCycleBtn" type="button" title="Cambiar tema (sistema / claro / oscuro)" aria-label="Cambiar tema">
+                        <span class="material-icons" id="themeCycleIcon" style="font-size: 18px;">brightness_auto</span>
                     </button>
-                    <button class="btn user-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <button class="btn user-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-label="Menú de usuario">
                         <span class="material-icons" style="font-size: 18px; margin-right: 8px;">account_circle</span>
-                        {{ current_user.get_full_name() }}
+                        <span class="username-text">{{ current_user.get_full_name() }}</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
+                        <li class="px-3 py-2 text-muted" style="font-size: .75rem; font-weight:600; text-transform:uppercase;">Tema</li>
+                        <li class="px-3 pb-2 d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-choice="system">Sistema</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-choice="light">Claro</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-theme-choice="dark">Oscuro</button>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
                         <li>
                             <a class="dropdown-item" href="{{ url_for('auth.profile') }}">
                                 <span class="material-icons" style="font-size: 18px; margin-right: 8px;">settings</span>
@@ -455,7 +501,7 @@
 
     {% if current_user.is_authenticated %}
     <!-- Sidebar moderno -->
-    <aside class="modern-sidebar">
+    <aside class="modern-sidebar" id="sidebar">
         <div class="sidebar-content">
             <div class="nav-section">
                 <div class="nav-section-title">Principal</div>
@@ -516,6 +562,7 @@
             </div>
         </div>
     </aside>
+    <div id="sidebarBackdrop" class="sidebar-backdrop" aria-hidden="true"></div>
     {% endif %}
 
     <!-- Contenido principal -->
@@ -554,30 +601,74 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Theme persistence
-        (function() {
+        // Tema: sistema / claro / oscuro con detección automática y preferencia persistente
+        (function(){
             const root = document.documentElement;
-            const btn = document.getElementById('themeToggleBtn');
-            const icon = document.getElementById('themeToggleIcon');
-            const stored = localStorage.getItem('theme');
-            if (stored === 'dark') {
-                root.setAttribute('data-theme', 'dark');
-                if (icon) icon.textContent = 'light_mode';
-            }
-            if (btn) {
-                btn.addEventListener('click', () => {
-                    const isDark = root.getAttribute('data-theme') === 'dark';
-                    if (isDark) {
-                        root.removeAttribute('data-theme');
-                        localStorage.setItem('theme', 'light');
-                        if (icon) icon.textContent = 'dark_mode';
-                    } else {
-                        root.setAttribute('data-theme', 'dark');
-                        localStorage.setItem('theme', 'dark');
-                        if (icon) icon.textContent = 'light_mode';
-                    }
+            const cycleBtn = document.getElementById('themeCycleBtn');
+            const cycleIcon = document.getElementById('themeCycleIcon');
+            const storageKey = 'themePreference'; // values: system|light|dark
+            const mm = window.matchMedia('(prefers-color-scheme: dark)');
+
+            function systemTheme(){ return mm.matches ? 'dark' : 'light'; }
+            function currentPref(){ return localStorage.getItem(storageKey) || 'system'; }
+            function apply(pref){
+                let applied = pref === 'system' ? systemTheme() : pref;
+                if(applied === 'dark') root.setAttribute('data-theme','dark'); else root.removeAttribute('data-theme');
+                // Icon feedback
+                if(cycleIcon){
+                    if(pref === 'system') cycleIcon.textContent = 'brightness_auto';
+                    else if(applied === 'dark') cycleIcon.textContent = 'dark_mode';
+                    else cycleIcon.textContent = 'light_mode';
+                }
+                // Mark active buttons in dropdown
+                document.querySelectorAll('[data-theme-choice]').forEach(btn=>{
+                    btn.classList.toggle('btn-primary', btn.getAttribute('data-theme-choice')===pref);
+                    btn.classList.toggle('btn-outline-secondary', btn.getAttribute('data-theme-choice')!==pref);
                 });
             }
+            function cycle(){
+                const order = ['system','light','dark'];
+                const pref = currentPref();
+                const idx = order.indexOf(pref);
+                const next = order[(idx+1)%order.length];
+                localStorage.setItem(storageKey,next);
+                apply(next);
+            }
+            // Initial
+            apply(currentPref());
+            // Listen system changes when pref = system
+            mm.addEventListener('change', () => { if(currentPref()==='system') apply('system'); });
+            cycleBtn && cycleBtn.addEventListener('click', cycle);
+            // Dropdown explicit selection
+            document.querySelectorAll('[data-theme-choice]').forEach(btn=>{
+                btn.addEventListener('click', e=>{ const pref = e.currentTarget.getAttribute('data-theme-choice'); localStorage.setItem(storageKey,pref); apply(pref); });
+            });
+        })();
+
+        // Auto ocultar header al hacer scroll hacia abajo y mostrar al subir
+        (function(){
+            const header = document.querySelector('.modern-header');
+            if(!header) return;
+            let lastY = window.scrollY;
+            let ticking = false;
+            function onScroll(){
+                const current = window.scrollY;
+                const delta = current - lastY;
+                if(Math.abs(delta) > 8){
+                    if(current > 80 && delta > 0){
+                        header.classList.add('header-hidden');
+                        document.body.classList.add('header-hidden');
+                    } else if(delta < 0) {
+                        header.classList.remove('header-hidden');
+                        document.body.classList.remove('header-hidden');
+                    }
+                    lastY = current;
+                }
+                ticking = false;
+            }
+            window.addEventListener('scroll', () => {
+                if(!ticking){ requestAnimationFrame(onScroll); ticking = true; }
+            }, { passive: true });
         })();
 
         // Sidebar compact/expanded toggle
@@ -638,22 +729,58 @@
             });
         });
 
-        // Toggle sidebar en móvil
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.modern-sidebar');
-            sidebar.classList.toggle('show');
-        }
+        // Toggle sidebar en móvil + accesibilidad
+        (function(){
+            const sidebar = document.getElementById('sidebar');
+            const btn = document.getElementById('mobileMenuBtn');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if(!sidebar || !btn) return;
 
-        // Cerrar sidebar al hacer click fuera en móvil
-        document.addEventListener('click', function(event) {
-            const sidebar = document.querySelector('.modern-sidebar');
-            const isClickInsideSidebar = sidebar.contains(event.target);
-            const isClickOnMenuButton = event.target.closest('.navbar-toggler');
-            
-            if (!isClickInsideSidebar && !isClickOnMenuButton && window.innerWidth <= 768) {
-                sidebar.classList.remove('show');
+            const focusableSelectors = 'a[href], button:not([disabled]), [tabindex="0"]';
+            let lastFocused;
+
+            function openSidebar(){
+                lastFocused = document.activeElement;
+                sidebar.classList.add('show');
+                backdrop && backdrop.classList.add('show');
+                document.body.classList.add('sidebar-open');
+                btn.setAttribute('aria-expanded','true');
+                // Focus first link
+                const firstLink = sidebar.querySelector(focusableSelectors);
+                firstLink && firstLink.focus({preventScroll:true});
             }
-        });
+            function closeSidebar(){
+                sidebar.classList.remove('show');
+                backdrop && backdrop.classList.remove('show');
+                document.body.classList.remove('sidebar-open');
+                btn.setAttribute('aria-expanded','false');
+                lastFocused && lastFocused.focus({preventScroll:true});
+            }
+            function toggle(){
+                sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
+            }
+            btn.addEventListener('click', toggle);
+            backdrop && backdrop.addEventListener('click', closeSidebar);
+
+            // Cerrar al seleccionar un link en móvil
+            sidebar.addEventListener('click', e => {
+                if(window.innerWidth <= 768 && e.target.closest('a.nav-link')) closeSidebar();
+            });
+            // ESC para cerrar
+            document.addEventListener('keydown', e => {
+                if(e.key === 'Escape' && sidebar.classList.contains('show')) closeSidebar();
+            });
+            // Ajustar al cambiar tamaño (si pasa a desktop, asegurar estado consistente)
+            window.addEventListener('resize', () => {
+                if(window.innerWidth > 768){
+                    sidebar.classList.remove('show');
+                    backdrop && backdrop.classList.remove('show');
+                    document.body.classList.remove('sidebar-open');
+                    btn.setAttribute('aria-expanded','false');
+                }
+            });
+        })();
+
 
         // Smooth scrolling para navegación
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {

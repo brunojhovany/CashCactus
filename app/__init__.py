@@ -20,6 +20,7 @@ def create_app():
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Por favor, inicia sesión para acceder a esta página.'
+    login_manager.session_protection = 'strong'
     
     # Importar modelos
     from app.models.user import User
@@ -34,6 +35,14 @@ def create_app():
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(reminders_bp)
+
+    # Mitigar caching de respuestas autenticadas en navegadores compartidos
+    @app.after_request
+    def set_secure_headers(resp):
+        resp.headers.setdefault('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0')
+        resp.headers.setdefault('Pragma', 'no-cache')
+        resp.headers.setdefault('Expires', '0')
+        return resp
     
     # Filtros personalizados para plantillas
     @app.template_filter('month_name')

@@ -13,7 +13,10 @@ class Config:
     """
 
     # Security
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'change-me')  # override via env in production
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'change-me')  # MUST override via env in production
+    if SECRET_KEY == 'change-me' and os.environ.get('ALLOW_DEFAULT_SECRET') != '1':
+        # Fail fast to avoid predictable session signing allowing impersonation
+        raise RuntimeError('Insecure SECRET_KEY in use. Set SECRET_KEY env var (export SECRET_KEY="super-random-value").')
 
     # Database (default to SQLite in the instance folder)
     # Examples:
@@ -36,3 +39,11 @@ class Config:
 
     # Session
     PERMANENT_SESSION_LIFETIME = timedelta(hours=int(os.environ.get('SESSION_HOURS', '24')))
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
+    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', '0') == '1'
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
+    REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
+    # Force refresh interval for remember cookie (mitigate stolen cookie reuse)
+    REMEMBER_COOKIE_DURATION = timedelta(days=int(os.environ.get('REMEMBER_DAYS', '7')))

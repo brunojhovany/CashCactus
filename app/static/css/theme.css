@@ -16,9 +16,10 @@
   --pm-radius: 12px;
   --pm-shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
   --pm-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+  --pm-btn: #1a1b1b;
 }
 [data-theme="dark"] body {
-  background: #0b1220; /* deep slate */
+  background: #202124; /* deep slate */
 }
 
 /* App shell */
@@ -107,10 +108,11 @@
 
 /* Dark mode overrides */
 [data-theme="dark"] {
-  --pm-surface: #0f172a; /* slate-900 */
+  --pm-surface: #1a1b1b; /* slate-900 */
   --pm-text: #e5e7eb; /* gray-200 */
   --pm-muted: #94a3b8; /* slate-400 */
   --pm-border: #1f2937; /* gray-800 */
+  --pm-btn: #292929;
 }
 
 /* Container and spacing */
@@ -163,7 +165,7 @@
   padding: 10px 16px;
   font-weight: 600;
   border: 1px solid var(--pm-border);
-  background: white;
+  background: var(--pm-btn);
   color: var(--pm-text);
 }
 .pm-btn-primary {
@@ -188,6 +190,29 @@
 [data-theme="dark"] .pm-table thead th {
   background: #0b1220; /* dark row */
 }
+
+/* Generic Bootstrap card/table dark overrides */
+[data-theme="dark"] .card {
+  background: var(--pm-surface) !important;
+  color: var(--pm-text);
+  border: 1px solid var(--pm-border);
+}
+[data-theme="dark"] .card .card-header,
+[data-theme="dark"] .card-header {
+  background: var(--pm-surface);
+  border-bottom: 1px solid var(--pm-border);
+  color: var(--pm-text);
+}
+[data-theme="dark"] .table { background: var(--pm-surface); color: var(--pm-text); }
+[data-theme="dark"] .table tbody tr { background: transparent; }
+[data-theme="dark"] .table-hover tbody tr:hover { background: rgba(255,255,255,0.04); }
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .form-control { background: #222; border-color: var(--pm-border); color: var(--pm-text); }
+[data-theme="dark"] .form-select option { background: #222; color: var(--pm-text); }
+[data-theme="dark"] .btn-outline-primary { color: var(--pm-primary); border-color: var(--pm-primary); }
+[data-theme="dark"] .btn-outline-primary:hover { background: var(--pm-primary); color: #fff; }
+[data-theme="dark"] .btn-outline-secondary { color: var(--pm-text); border-color: var(--pm-border); }
+[data-theme="dark"] .btn-outline-secondary:hover { background: #2d2d2d; color: var(--pm-text); }
 
 /* Utilities */
 .pm-muted { color: var(--pm-muted); }
