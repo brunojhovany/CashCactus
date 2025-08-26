@@ -1,4 +1,4 @@
-# CashCactus (Personal Finance)
+# CashCactus (Personal Finance) [![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-highlight.svg)](https://sonarcloud.io/summary/new_code?id=brunojhovany_CashCactus)
 
 ![CashCactus demo](images/image.png)
 
