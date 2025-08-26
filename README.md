@@ -33,13 +33,30 @@ python run.py
 Open http://localhost:5000.
 
 ## Configuration
-All configuration via environment variables (see `config.py`):
-- SECRET_KEY: application secret
-- DATABASE_URL: SQLAlchemy URL (default: sqlite:///instance/finanzas.db)
-- TIMEZONE: default UTC
-- REPORT_FREQUENCY_DAYS: default 90
-- REMINDER_ADVANCE_DAYS: default 3
-- SESSION_HOURS: default 24
+All configuration via environment variables (`.env` or deployment env). See `config.py` and `.env.example`.
+
+Core:
+- SECRET_KEY: required; stable for session signing.
+- DATABASE_URL: SQLAlchemy URL (defaults to local SQLite).
+- TIMEZONE: affects scheduler cron times (default UTC).
+- SESSION_HOURS, REMEMBER_DAYS: session persistence.
+
+Security / Proxy:
+- SESSION_COOKIE_SECURE / FORCE_COOKIE_SECURE
+- FORCE_HTTPS (adjust URL generation behind TLS proxy)
+
+Closed Beta:
+- BETA_MODE=1 enables restriction.
+- BETA_ALLOWED_EMAILS (comma list) and/or BETA_ALLOWED_DOMAIN.
+
+Google OAuth:
+- GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET (from Google Cloud Console)
+- GOOGLE_REDIRECT_PATH (default /auth/google/callback)
+
+Other:
+- REPORT_FREQUENCY_DAYS, REMINDER_ADVANCE_DAYS
+
+For local development: copy `.env.example` to `.env` and edit.
 
 ## Daily jobs
 APScheduler runs in-process:
@@ -49,9 +66,6 @@ APScheduler runs in-process:
 ## Development
 - Run tests: `pytest`
 - Linting/formatting: (optional) black/ruff
-
-## Security
-Never commit secrets or production databases. Use environment variables and the `instance/` folder for local data.
 
 ## License
 MIT — see `LICENSE`.

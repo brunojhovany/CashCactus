@@ -1,4 +1,5 @@
-from flask import Flask
+# -*- coding: utf-8 -*-
+from flask import Flask, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
@@ -42,7 +43,20 @@ def create_app():
         resp.headers.setdefault('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0')
         resp.headers.setdefault('Pragma', 'no-cache')
         resp.headers.setdefault('Expires', '0')
+        # Indicar al app si viene detrás de proxy HTTPS para urls absolutas
+        if request.headers.get('X-Forwarded-Proto', '') == 'https':
+            resp.headers.setdefault('Content-Security-Policy', "default-src 'self'")
         return resp
+
+    # Beta gate: bloquear registro y acceso a login normal si beta activa y email no permitido
+    if app.config.get('BETA_MODE'):
+        from app.controllers.auth_controller import AuthController
+        @app.before_request
+        def enforce_beta():
+            if request.endpoint in ('auth.login', 'auth.register') and request.method == 'POST':
+                email = request.form.get('email') or request.form.get('username')
+                if email and not AuthController._is_beta_email_allowed(email):
+                    abort(403)
     
     # Filtros personalizados para plantillas
     @app.template_filter('month_name')

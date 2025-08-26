@@ -21,6 +21,14 @@ auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 def login():
     return AuthController.login()
 
+@auth_bp.route('/login/google')
+def login_google():
+    return AuthController.login_google_start()
+
+@auth_bp.route('/google/callback')
+def login_google_callback():
+    return AuthController.login_google_callback()
+
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     return AuthController.register()

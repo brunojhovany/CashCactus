@@ -11,6 +11,11 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
+    # Campos opcionales para OAuth
+    oauth_provider = db.Column(db.String(50), nullable=True)
+    oauth_sub = db.Column(db.String(255), nullable=True, index=True)
+    # Beta flags
+    is_beta_allowed = db.Column(db.Boolean, default=False)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     monthly_income = db.Column(db.Float, default=0.0)

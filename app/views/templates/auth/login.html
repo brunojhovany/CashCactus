@@ -25,6 +25,17 @@
                     </div>
                 </form>
                 <hr>
+                <div class="text-center mb-3">
+                    <a href="{{ url_for('auth.login_google') }}" class="pm-btn pm-btn-secondary w-100" style="display:flex;align-items:center;justify-content:center;gap:.5rem;">
+                        <img src="https://www.gstatic.com/images/branding/product/1x/gsa_64dp.png" alt="Google" style="height:20px;width:20px;object-fit:contain;"> Iniciar con Google
+                    </a>
+                </div>
+                {# Usa 'config' en lugar de current_app (no inyectado por defecto en Jinja) #}
+                {% if config.BETA_MODE %}
+                <div class="alert alert-info small" role="alert">
+                    Beta cerrada activa: solo correos permitidos.
+                </div>
+                {% endif %}
                 <div class="text-center">
                     <p class="mb-2">¿No tienes cuenta?</p>
                     <a href="{{ url_for('auth.register') }}" class="pm-btn">Crear Cuenta</a>

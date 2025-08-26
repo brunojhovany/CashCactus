@@ -1,16 +1,27 @@
+#############################
+# Application dependencies  #
+#############################
+
 Flask==2.3.3
 Flask-SQLAlchemy==3.0.5
 Flask-Login==0.6.3
-Werkzeug==2.3.7
+SQLAlchemy==2.0.43
 APScheduler==3.10.4
+Authlib==1.3.1
 python-dateutil==2.8.2
-matplotlib==3.7.2
 pandas==2.0.3
 numpy==1.24.4
+matplotlib==3.7.2
 gunicorn==21.2.0
+backports.zoneinfo==0.2.1; python_version < '3.9'
 
-# Testing dependencies
+#############################
+# Testing dependencies      #
+#############################
+
 pytest==7.4.0
 pytest-flask==1.2.0
 pytest-cov==4.1.0
 coverage==7.2.7
+
+# Nota: Dependencias transitivas (Werkzeug, Jinja2, etc.) las gestiona Flask.

@@ -380,6 +380,19 @@
             box-shadow: var(--shadow-1);
         }
 
+        /* Contenedor fijo para mensajes flash (sobre el header) */
+        .flash-messages-fixed {
+            position: fixed;
+            top: 70px; /* altura aproximada del header */
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(640px, 92%);
+            z-index: 1100; /* mayor que el header (1000) */
+            pointer-events: none; /* permitir clicks pasar excepto en alert */
+        }
+        .flash-messages-fixed .alert { pointer-events: auto; animation: fadeIn .4s ease; }
+        body.header-hidden .flash-messages-fixed { top: 16px; }
+
         /* Tablas modernas */
         .table {
             border-radius: var(--border-radius);
@@ -499,6 +512,29 @@
         </div>
     </header>
 
+        {# Mensajes flash globales: se muestran siempre justo debajo del header para evitar quedar detrás #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages-fixed">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show d-flex align-items-start gap-2" role="alert">
+                            {% if category == 'success' %}
+                                <span class="material-icons" style="font-size: 20px;">check_circle</span>
+                            {% elif category == 'error' or category == 'danger' %}
+                                <span class="material-icons" style="font-size: 20px;">error</span>
+                            {% elif category == 'warning' %}
+                                <span class="material-icons" style="font-size: 20px;">warning</span>
+                            {% else %}
+                                <span class="material-icons" style="font-size: 20px;">info</span>
+                            {% endif %}
+                            <div class="flex-grow-1">{{ message }}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
     {% if current_user.is_authenticated %}
     <!-- Sidebar moderno -->
     <aside class="modern-sidebar" id="sidebar">
@@ -568,29 +604,6 @@
     <!-- Contenido principal -->
     <main class="main-content {% if not current_user.is_authenticated %}w-100 m-0{% endif %}">
         <div class="fade-in">
-            <!-- Mensajes flash -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    <div class="mb-4">
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
-                                {% if category == 'success' %}
-                                    <span class="material-icons" style="font-size: 18px; margin-right: 8px;">check_circle</span>
-                                {% elif category == 'error' or category == 'danger' %}
-                                    <span class="material-icons" style="font-size: 18px; margin-right: 8px;">error</span>
-                                {% elif category == 'warning' %}
-                                    <span class="material-icons" style="font-size: 18px; margin-right: 8px;">warning</span>
-                                {% else %}
-                                    <span class="material-icons" style="font-size: 18px; margin-right: 8px;">info</span>
-                                {% endif %}
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endwith %}
-
             <!-- Contenido de la página -->
             <div class="pm-container">
                 {% block content %}{% endblock %}
