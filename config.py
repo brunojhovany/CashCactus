@@ -34,6 +34,21 @@ class Config:
     # Proxy / esquema (cuando está detrás de Cloudflare / Traefik con TLS)
     PREFERRED_URL_SCHEME = 'https' if os.environ.get('FORCE_HTTPS', '0') == '1' else 'http'
 
+    # Ajustes ProxyFix (para reconstrucción correcta de URLs cuando la app corre detrás
+    # de un Ingress / Load Balancer que añade cabeceras X-Forwarded-*)
+    # Número de proxies de los que se deben aceptar encabezados. Normalmente 1 si sólo hay
+    # un Ingress / Reverse Proxy delante del contenedor.
+    PROXY_FIX_X_FOR = int(os.environ.get('PROXY_FIX_X_FOR', '1')) if os.environ.get('ENABLE_PROXY_FIX', '1') == '1' else 0
+    PROXY_FIX_X_PROTO = int(os.environ.get('PROXY_FIX_X_PROTO', '1')) if os.environ.get('ENABLE_PROXY_FIX', '1') == '1' else 0
+    PROXY_FIX_X_HOST = int(os.environ.get('PROXY_FIX_X_HOST', '0')) if os.environ.get('ENABLE_PROXY_FIX', '1') == '1' else 0
+    PROXY_FIX_X_PORT = int(os.environ.get('PROXY_FIX_X_PORT', '0')) if os.environ.get('ENABLE_PROXY_FIX', '1') == '1' else 0
+    PROXY_FIX_X_PREFIX = int(os.environ.get('PROXY_FIX_X_PREFIX', '0')) if os.environ.get('ENABLE_PROXY_FIX', '1') == '1' else 0
+
+    # Permite forzar un dominio externo específico si, por alguna razón, los encabezados
+    # de proxy no son fiables. Evitar usarlo salvo necesidad puntual (ej: tareas offline que
+    # construyen URLs absolutas). Formato sin esquema, ej: "app.ejemplo.com".
+    FORCE_EXTERNAL_HOST = os.environ.get('FORCE_EXTERNAL_HOST')  # opcional
+
     # Closed Beta
     BETA_MODE = os.environ.get('BETA_MODE', '0') == '1'  # si True restringe acceso solo a emails permitidos
     # Lista explícita de correos permitidos (coma separada) o dominio permitido

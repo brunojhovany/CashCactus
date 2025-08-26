@@ -33,7 +33,7 @@ class AuthController:
                 if not is_safe_url(next_page):
                     next_page = None
                 flash(f'¡Bienvenido, {user.get_full_name()}!', 'success')
-                return redirect(next_page or url_for('main.dashboard'))
+                return redirect(url_for(next_page) or url_for('main.dashboard'))
             flash('Usuario o contraseña incorrectos.', 'error')
         return render_template('auth/login.html')
 

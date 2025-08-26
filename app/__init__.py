@@ -5,6 +5,7 @@ from flask_login import LoginManager
 from config import Config
 import os
 from sqlalchemy import inspect, text
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Avoid attribute expiration after commit so test fixtures can access model fields
 # without needing an active session context (helps in unit tests where objects
@@ -16,6 +17,24 @@ login_manager = LoginManager()
 def create_app():
     app = Flask(__name__, template_folder='views/templates')
     app.config.from_object(Config)
+
+    # Aplicar ProxyFix si está habilitado (por defecto sí). Esto permite que url_for(_external=True)
+    # use el Host y esquema reales enviados por el Ingress (cabeceras X-Forwarded-*).
+    if any([
+        app.config.get('PROXY_FIX_X_FOR'),
+        app.config.get('PROXY_FIX_X_PROTO'),
+        app.config.get('PROXY_FIX_X_HOST'),
+        app.config.get('PROXY_FIX_X_PORT'),
+        app.config.get('PROXY_FIX_X_PREFIX')
+    ]):
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app,
+            x_for=app.config['PROXY_FIX_X_FOR'],
+            x_proto=app.config['PROXY_FIX_X_PROTO'],
+            x_host=app.config['PROXY_FIX_X_HOST'],
+            x_port=app.config['PROXY_FIX_X_PORT'],
+            x_prefix=app.config['PROXY_FIX_X_PREFIX']
+        )
     
     # Inicializar extensiones
     db.init_app(app)
@@ -89,6 +108,11 @@ def create_app():
     # Inicializar scheduler para recordatorios
     from app.services.scheduler import init_scheduler
     init_scheduler(app)
+
+    # Si se definió FORCE_EXTERNAL_HOST, sobre-escribimos SERVER_NAME sólo para generación
+    # de URLs absolutas. Nota: esto puede afectar subdominios / testing, úsese con cuidado.
+    if app.config.get('FORCE_EXTERNAL_HOST'):
+        app.config['SERVER_NAME'] = app.config['FORCE_EXTERNAL_HOST']
 
     # Las imágenes ahora se sirven desde app/static, no se necesita ruta personalizada
     
