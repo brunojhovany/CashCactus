@@ -38,17 +38,6 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(reminders_bp)
 
-    # Mitigar caching de respuestas autenticadas en navegadores compartidos
-    @app.after_request
-    def set_secure_headers(resp):
-        resp.headers.setdefault('Cache-Control', 'no-store, no-cache, must-revalidate, private, max-age=0')
-        resp.headers.setdefault('Pragma', 'no-cache')
-        resp.headers.setdefault('Expires', '0')
-        # Indicar al app si viene detrás de proxy HTTPS para urls absolutas
-        if request.headers.get('X-Forwarded-Proto', '') == 'https':
-            resp.headers.setdefault('Content-Security-Policy', "default-src 'self'")
-        return resp
-
     # Beta gate: bloquear registro y acceso a login normal si beta activa y email no permitido
     if app.config.get('BETA_MODE'):
         from app.controllers.auth_controller import AuthController
