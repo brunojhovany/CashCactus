@@ -36,8 +36,8 @@
                             <li><a class="dropdown-item" href="{{ url_for('main.edit_account', account_id=account.id) }}">
                                 <i class="fas fa-edit me-2"></i>Editar
                             </a></li>
-                            <li><button class="dropdown-item text-danger" style="border: none; background: none; width: 100%; text-align: left;"
-                                        onclick="deleteAccount('{{ url_for('main.delete_account', account_id=account.id) }}')">
+                            <li><button class="dropdown-item text-danger delete-account-btn" type="button" style="border: none; background: none; width: 100%; text-align: left;"
+                                        data-delete-url="{{ url_for('main.delete_account', account_id=account.id) }}">
                                 <i class="fas fa-trash me-2"></i>Eliminar
                             </button></li>
                         </ul>
@@ -51,12 +51,7 @@
                     <small class="text-muted">Saldo Actual</small>
                 </div>
                 
-                {% if account.account_number %}
-                <div class="mt-3">
-                    <small class="text-muted">Número de cuenta</small>
-                    <p class="mb-0">{{ account.account_number }}</p>
-                </div>
-                {% endif %}
+                <!-- Número de cuenta oculto por política de privacidad -->
                 
                 <div class="mt-3">
                     <small class="text-muted">Estado</small>
@@ -89,15 +84,20 @@
 {% endif %}
 
 <script>
-function deleteAccount(url) {
-    if (confirm('¿Estás seguro de eliminar esta cuenta? Se desactivará pero no se eliminará definitivamente.')) {
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = url;
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.delete-account-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const url = this.getAttribute('data-delete-url');
+            if (confirm('¿Estás seguro de eliminar esta cuenta? Se desactivará pero no se eliminará definitivamente.')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    });
+});
 </script>
 
 {% endblock %}

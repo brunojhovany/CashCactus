@@ -35,7 +35,6 @@ class AccountController:
                 except ValueError:
                     initial_balance = 0.0
                 bank_name = request.form.get('bank_name')
-                account_number = request.form.get('account_number')
                 
                 if not name or not account_type:
                     flash('Nombre y tipo de cuenta son obligatorios.', 'error')
@@ -47,8 +46,7 @@ class AccountController:
                     name=name,
                     account_type=account_type,
                     balance=initial_balance,
-                    bank_name=bank_name,
-                    account_number=account_number
+                    bank_name=bank_name
                 )
                 
                 # Campos para cuentas de inversión y ahorro
@@ -122,7 +120,7 @@ class AccountController:
                 account.name = request.form.get('name')
                 account.account_type = request.form.get('account_type')
                 account.bank_name = request.form.get('bank_name')
-                account.account_number = request.form.get('account_number')
+                # account_number intentionally ignored (deprecated)
                 account.balance = new_balance
                 account.is_active = bool(request.form.get('is_active'))
                 

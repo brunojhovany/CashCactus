@@ -66,6 +66,7 @@ class AuthController:
         sub = userinfo.get('sub')
         given_name = userinfo.get('given_name', '')
         family_name = userinfo.get('family_name', '')
+        picture_url = userinfo.get('picture')
 
         from app.models.user import User
         user = User.query.filter_by(oauth_provider='google', oauth_sub=sub).first()
@@ -89,7 +90,8 @@ class AuthController:
                     oauth_provider='google',
                     oauth_sub=sub,
                     is_beta_allowed=True if current_app.config.get('BETA_MODE') else False,
-                    monthly_income=0.0
+                    monthly_income=0.0,
+                    avatar_url=picture_url[:300] if picture_url else None
                 )
                 # Establecer un password aleatorio (no usado) para cumplir no-null
                 user.set_password(os.urandom(16).hex())
@@ -98,6 +100,9 @@ class AuthController:
         if current_app.config.get('BETA_MODE') and not AuthController._is_beta_email_allowed(email):
             flash('Acceso restringido (beta cerrada).', 'error')
             return redirect(url_for('auth.login'))
+        # Actualizar avatar si no está guardado
+        if picture_url and (not user.avatar_url):
+            user.avatar_url = picture_url[:300]
         db.session.commit()
         session.clear()
         login_user(user)

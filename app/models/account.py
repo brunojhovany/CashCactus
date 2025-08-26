@@ -11,7 +11,10 @@ class Account(db.Model):
     account_type = db.Column(db.String(50), nullable=False)  # 'checking', 'savings', 'investment', 'debt'
     balance = db.Column(db.Float, default=0.0)
     bank_name = db.Column(db.String(100))
-    account_number = db.Column(db.String(50))
+    # Deprecated sensitive field: previously stored full account numbers.
+    # Now unused and should remain NULL. Plan: create migration to DROP COLUMN accounts.account_number.
+    # Kept only so existing databases still map; application code no longer reads/writes it.
+    account_number = db.Column(db.String(50))  # DO NOT USE
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

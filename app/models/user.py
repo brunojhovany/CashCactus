@@ -14,6 +14,7 @@ class User(UserMixin, db.Model):
     # Campos opcionales para OAuth
     oauth_provider = db.Column(db.String(50), nullable=True)
     oauth_sub = db.Column(db.String(255), nullable=True, index=True)
+    avatar_url = db.Column(db.String(300), nullable=True)  # URL de avatar (ej: Google)
     # Beta flags
     is_beta_allowed = db.Column(db.Boolean, default=False)
     first_name = db.Column(db.String(50), nullable=False)

@@ -14,6 +14,7 @@ numpy==1.24.4
 matplotlib==3.7.2
 gunicorn==21.2.0
 backports.zoneinfo==0.2.1; python_version < '3.9'
+psycopg2-binary==2.9.10  # PostgreSQL driver (use psycopg2 in prod if building from source)
 
 #############################
 # Testing dependencies      #

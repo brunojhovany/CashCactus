@@ -123,13 +123,13 @@
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 8px;
+            /* gap: 8px; */
             margin-left: auto;
             min-width: 0; /* allow shrink */
         }
 
         /* Truncar nombre usuario si muy largo */
-        .user-btn .username-text { max-width: 140px; display: inline-block; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .user-btn .username-text { display: inline-block; vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* Móvil: ocultar texto para ganar espacio */
         @media (max-width: 640px) {
@@ -408,13 +408,15 @@
         }
     [data-theme='dark'] .table thead th { background: #1e1e1e; border-bottom-color: #2c2c2c; }
 
-        /* Usuario dropdown */
-        .user-dropdown {
-            position: relative;
-        }
-
-    .user-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #fff; border-radius: 50px; padding: 8px 16px; font-weight: 500; transition: all .2s; }
+    /* Usuario & tema */
+    .header-actions { display:flex; align-items:center; gap:10px; }
+    .user-dropdown { position: relative; display:flex; align-items:center; }
+    .user-btn { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.18); color: #fff; border-radius: 40px; padding: 6px 14px; font-weight: 500; transition: all .2s; display:inline-flex; align-items:center; gap:8px; height:40px; }
     .user-btn:hover { background: rgba(255,255,255,0.18); color: #fff; }
+    #themeCycleBtn { width:40px; padding:6px; justify-content:center; }
+    #themeCycleBtn .material-icons { margin:0; font-size:20px !important; }
+    .user-btn img { width:30px; height:30px; border-radius:50%; object-fit:cover; display:block; }
+    .user-btn .username-text { font-size:.9rem; line-height:1.1; }
 
         /* Animaciones */
         @keyframes fadeIn {
@@ -480,9 +482,13 @@
                     <button class="btn user-btn me-1" id="themeCycleBtn" type="button" title="Cambiar tema (sistema / claro / oscuro)" aria-label="Cambiar tema">
                         <span class="material-icons" id="themeCycleIcon" style="font-size: 18px;">brightness_auto</span>
                     </button>
-                    <button class="btn user-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-label="Menú de usuario">
-                        <span class="material-icons" style="font-size: 18px; margin-right: 8px;">account_circle</span>
-                        <span class="username-text">{{ current_user.get_full_name() }}</span>
+                    <button class="btn user-btn dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown" aria-label="Menú de usuario" style="gap:8px;">
+                        {% if current_user.avatar_url %}
+                            <img src="{{ current_user.avatar_url }}" alt="Avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 1px rgba(255,255,255,0.4);" referrerpolicy="no-referrer" />
+                        {% else %}
+                            <span class="material-icons" style="font-size: 24px;">account_circle</span>
+                        {% endif %}
+                        <span class="username-text" style="line-height:1;">{{ current_user.get_full_name() }}</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li class="px-3 py-2 text-muted" style="font-size: .75rem; font-weight:600; text-transform:uppercase;">Tema</li>
@@ -567,6 +573,12 @@
                     <a class="nav-link {% if 'credit_card' in request.endpoint %}active{% endif %}" href="{{ url_for('main.credit_cards') }}">
                         <span class="material-icons">credit_card</span>
                         <span>Tarjetas</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a class="nav-link {% if request.endpoint and request.endpoint.startswith('main.debt') %}active{% endif %}" href="{{ url_for('main.debt_accounts') }}">
+                        <span class="material-icons">account_balance_wallet</span>
+                        <span>Deudas</span>
                     </a>
                 </div>
             </div>

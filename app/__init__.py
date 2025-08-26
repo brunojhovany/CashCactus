@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
 import os
+from sqlalchemy import inspect, text
 
 # Avoid attribute expiration after commit so test fixtures can access model fields
 # without needing an active session context (helps in unit tests where objects
@@ -84,6 +85,17 @@ def create_app():
     # Crear tablas
     with app.app_context():
         db.create_all()
+        # Schema patch: ensure avatar_url column exists (added after initial deploy)
+        try:
+            inspector = inspect(db.engine)
+            user_cols = [c['name'] for c in inspector.get_columns('users')]
+            if 'avatar_url' not in user_cols:
+                # Compatible SQL for both PostgreSQL and SQLite
+                with db.engine.begin() as conn:
+                    conn.execute(text('ALTER TABLE users ADD COLUMN avatar_url VARCHAR(300)'))
+        except Exception:
+            # Silent: avoid breaking app startup if introspection fails
+            pass
     
     # Inicializar scheduler para recordatorios
     from app.services.scheduler import init_scheduler
