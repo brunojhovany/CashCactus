@@ -49,6 +49,8 @@ class AuthController:
             return redirect(url_for('auth.login'))
         AuthController._ensure_google_client(oauth)
         redirect_uri = url_for('auth.login_google_callback', _external=True)
+        if current_app.config.get('FORCE_HTTPS', '0') == '1':
+            redirect_uri = redirect_uri.replace('http://', 'https://', 1)
         return oauth.google.authorize_redirect(redirect_uri)
 
     @staticmethod
