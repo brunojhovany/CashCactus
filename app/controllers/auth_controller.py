@@ -33,7 +33,16 @@ class AuthController:
                 if not is_safe_url(next_page):
                     next_page = None
                 flash(f'¡Bienvenido, {user.get_full_name()}!', 'success')
-                return redirect(url_for(next_page) or url_for('main.dashboard'))
+                # Si next_page es un path (ej: '/reminders') usarlo directamente;
+                # si es nombre de endpoint (raro en query string) intentar resolverlo.
+                if next_page:
+                    if next_page.startswith('/'):
+                        return redirect(next_page)
+                    try:
+                        return redirect(url_for(next_page))
+                    except Exception:  # endpoint inválido
+                        pass
+                return redirect(url_for('main.dashboard'))
             flash('Usuario o contraseña incorrectos.', 'error')
         return render_template('auth/login.html')
 

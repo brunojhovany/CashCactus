@@ -67,5 +67,27 @@ APScheduler runs in-process:
 - Run tests: `pytest`
 - Linting/formatting: (optional) black/ruff
 
+## Migrations
+El repositorio open source NO incluye la carpeta `migrations/` para mantenerlo liviano. 
+
+Estrategias:
+
+1. Inicializar Alembic en tu fork / despliegue:
+```fish
+alembic init migrations
+# Configura env.py para apuntar a la metadata de la app (ver ejemplo en PRs previos)
+alembic revision --autogenerate -m "init"
+alembic upgrade head
+```
+2. Uso rápido (desarrollo local) sin mantener versiones: crea la carpeta `migrations/` y coloca el script auxiliar:
+```fish
+mkdir -p migrations
+cp -r migrations.example/* migrations/  # si provees una plantilla interna
+python -m migrations.auto_schema_sync --verbose
+```
+3. Script aditivo opcional: puedes copiar `migrations/auto_schema_sync.py` (ignorado por defecto) para crear tablas y columnas nuevas sin operaciones destructivas.
+
+La aplicación no hace `db.create_all()` automático de forma completa; asegúrate de correr migraciones o el script antes de uso serio.
+
 ## License
 MIT — see `LICENSE`.
