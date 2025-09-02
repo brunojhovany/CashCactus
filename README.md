@@ -68,26 +68,49 @@ APScheduler runs in-process:
 - Linting/formatting: (optional) black/ruff
 
 ## Migrations
-El repositorio open source NO incluye la carpeta `migrations/` para mantenerlo liviano. 
+The repository includes `migrations/` (Alembic + Flask-Migrate).
 
-Estrategias:
-
-1. Inicializar Alembic en tu fork / despliegue:
+Typical local flow:
 ```fish
-alembic init migrations
-# Configura env.py para apuntar a la metadata de la app (ver ejemplo en PRs previos)
-alembic revision --autogenerate -m "init"
-alembic upgrade head
+export DATABASE_URL=sqlite:///$(pwd)/instance/finanzas.db
+flask db upgrade          # apply all existing revisions
+# Change / add models...
+flask db migrate -m "add X"
+flask db upgrade
 ```
-2. Uso rápido (desarrollo local) sin mantener versiones: crea la carpeta `migrations/` y coloca el script auxiliar:
-```fish
-mkdir -p migrations
-cp -r migrations.example/* migrations/  # si provees una plantilla interna
-python -m migrations.auto_schema_sync --verbose
-```
-3. Script aditivo opcional: puedes copiar `migrations/auto_schema_sync.py` (ignorado por defecto) para crear tablas y columnas nuevas sin operaciones destructivas.
 
-La aplicación no hace `db.create_all()` automático de forma completa; asegúrate de correr migraciones o el script antes de uso serio.
+Show history / current head:
+```fish
+flask db history
+flask db current
+```
+
+Downgrade (only if the migration supports it):
+```fish
+flask db downgrade -1
+```
+
+Optional additive script: `migrations/auto_schema_sync.py` / `schema_upgrade.py`:
+Provides minimal additive sync (create missing tables / columns / simple indexes) for prototyping. For production always rely on formal Alembic migrations.
+
+Best practices (summary):
+- Review every generated script in `migrations/versions/`.
+- Use concise messages: `"create reminders table"`, `"add oauth_sub to users"`.
+- Do not edit already published migrations; create a new one instead.
+- For multiple heads (divergence): use `alembic merge`.
+
+See more details in `migrations/README`.
+
+### Automatic startup migrations (optional)
+
+Set `AUTO_MIGRATE=1` to run `alembic upgrade head` when the app boots (see `app/migrations_runner.py`).
+
+Environment variables:
+- `AUTO_MIGRATE=1` activate automated upgrade.
+- `MIGRATIONS_FAIL_FAST=0` continue serving even if upgrade fails (NOT recommended).
+- `MIGRATIONS_ADVISORY_LOCK_ID=<int>` custom Postgres advisory lock id (default 815551) to avoid race conditions across replicas.
+
+Use this for small/simple deployments; in larger environments consider a dedicated migration job in your pipeline.
 
 ## License
 MIT — see `LICENSE`.
