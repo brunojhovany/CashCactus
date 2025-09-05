@@ -80,6 +80,6 @@ helm/
 deployment.yaml
 
 # Migration scripts (no se rastrean en el OSS)
-migrations/
+
 Dockerfile.migrator
 schema_upgrade.py

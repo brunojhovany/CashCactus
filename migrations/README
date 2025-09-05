@@ -1,0 +1,125 @@
+README – Migraciones de Base de Datos (Alembic / Flask-Migrate)
+================================================================
+
+Resumen rápido
+--------------
+Este directorio contiene y versiona los cambios de esquema de la base de datos usando Alembic sobre SQLAlchemy a través de Flask-Migrate.
+
+Cheat‑sheet esencial:
+  flask db migrate -m "descripcion"   # Generar nueva revisión a partir de cambios en modelos
+  flask db upgrade                     # Aplicar hasta la última versión (head)
+  flask db downgrade -1                # Revertir la última migración
+  flask db history                     # Ver historial lineal
+  flask db current                     # Mostrar versión actual
+  flask db show <revision_id>          # Inspeccionar una revisión
+
+En CI/CD: ejecutar SIEMPRE `flask db upgrade` (idempotente) antes de iniciar la aplicación.
+
+Estructura de archivos relevante
+--------------------------------
+  alembic.ini                Configuración principal de Alembic (ajustada para vivir dentro de migrations/)
+  env.py                     Inicializa la app Flask y expone metadata para autogenerar migraciones (compare_type/server_default activos)
+  versions/                  Contiene los scripts de revisión (nuevas migraciones)
+  auto_schema_sync.py        Utilidad opcional para sincronización mínima aditiva (solo DEV / prototipos)
+
+Requisitos previos
+------------------
+1. Variables de entorno aceptadas:
+   - DATABASE_URL o SQLALCHEMY_DATABASE_URI (SQLite por defecto si no se especifica, según la fábrica de la app)
+   - SECRET_KEY (no crítica para migrar; se fuerza una temporal si falta)
+2. Todos los modelos deben estar importados en la app (create_app) para que el autogenerado los detecte.
+
+Flujo típico de desarrollo
+--------------------------
+1. Modificar/añadir modelos en `app/models/`.
+2. Generar migración:
+     flask db migrate -m "agrega campo X a tabla Y"
+   Verifica el script generado en `versions/` (revisa tipos, defaults, índices, nullables).
+3. Aplicar:
+     flask db upgrade
+4. Ejecutar tests para validar.
+
+Buenas prácticas
+----------------
+- Revisa siempre el script generado: el autogenerador no detecta todos los cambios complejos (renombres, división de columnas, transformaciones de datos).
+- Para renombrar columnas/tablas: escribe operaciones explícitas (op.alter_column / op.rename_table) y, si aplica, pasos de migración de datos.
+- Evita dependencias de lógica de aplicación (importar modelos dentro de migrations scripts); usa SQL o SQLAlchemy Core si necesitas manipular datos.
+- Commits pequeños y descriptivos en git acompañando cada migración.
+- Nunca edites retroactivamente una migración ya publicada; crea una nueva que corrija.
+
+Comparación de enfoques
+-----------------------
+| Herramienta               | Uso recomendado                                  |
+|---------------------------|---------------------------------------------------|
+| flask db migrate/upgrade  | Camino oficial y auditable (SIEMPRE en producción)|
+| auto_schema_sync.py       | Solo desarrollo rápido para crear tablas/cols     |
+
+
+Uso de auto_schema_sync.py (opcional)
+-------------------------------------
+Script aditivo que:
+  - Crea tablas faltantes
+  - Agrega columnas simples nuevas (no rompe NOT NULL existentes)
+  - Crea índices simples (column.index=True)
+No elimina ni altera tipos. Ideal para prototipar antes de formalizar con migraciones.
+
+Ejemplos:
+  python -m migrations.auto_schema_sync --dry-run
+  python -m migrations.auto_schema_sync --verbose
+
+Después de estabilizar el modelo, genera la migración formal: `flask db migrate` y elimina el uso continuo del sync.
+
+Branching y conflictos
+----------------------
+Si dos ramas generan migraciones sobre la misma base HEAD (paralelas):
+1. Al hacer rebase/merge revisa `flask db history`.
+2. Si aparece divergencia, crea una migración de merge manual:
+     alembic merge -m "merge heads" <head1> <head2>
+   (Con Flask-Migrate puedes usar `alembic` directamente.)
+3. Revisa que `flask db upgrade` llegue a un único head.
+
+Troubleshooting
+---------------
+- Error: 'No se pudo inicializar la app Flask para migraciones': Asegura que `create_app` existe y que dependencias están instaladas.
+- Cambios no detectados: confirma que el nuevo modelo/campo está importado en la factoría de la app o en algún módulo cargado al arrancar.
+- Tipos que no cambian: puede requerir `--autogenerate` manual y editar script (Alembic a veces no infiere modificaciones de tipos complejos).
+- SQLite limitaciones: algunos ALTER complejos no se soportan; crea tabla temporal y haz copia manual en la migración.
+- Downgrade fallido: valida que las operaciones reversibles estén implementadas (drops/creates en orden inverso). Si no puedes garantizar downgrade seguro, documenta la irreversibilidad en el script y lanza `raise` en `downgrade()`.
+
+Comandos útiles extra
+---------------------
+  flask db stamp head        # Marca la BD como al día sin aplicar diffs (solo si estás seguro)
+  flask db heads             # Lista los heads (debe ser 1)
+  flask db branches          # Muestra ramas divergentes
+
+Integración CI/CD
+-----------------
+Pipeline sugerido:
+  - Instalar dependencias
+  - Exportar DATABASE_URL (por ej. Postgres de test)
+  - Ejecutar: flask db upgrade
+  - Ejecutar tests
+  - (Opcional) Validar que no haya modelos sin migrar: flask db migrate --message "check"; si genera archivo -> fallo (puedes borrar el archivo y fallar el job).
+
+Verificación de drift (opcional en CI):
+  flask db migrate -m "drift_check" && if [ -n "$(git status --porcelain migrations/versions)" ]; then echo "Schema drift detectado"; exit 1; fi
+
+Convenciones de mensajes
+------------------------
+Usar descripción corta en presente:
+  "agrega campo oauth_sub a users"
+  "crea tabla reminders"
+
+Seguridad
+---------
+Nunca expongas credenciales reales en scripts de migración. Usa variables de entorno. No incluyas datos sensibles hardcodeados.
+
+Resumen
+-------
+1. Cambia modelos
+2. flask db migrate
+3. Revisa script
+4. flask db upgrade
+5. Commit + push
+
+Listo: la base queda versionada y reproducible.
