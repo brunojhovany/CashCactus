@@ -55,6 +55,49 @@ Google OAuth:
 
 Other:
 - REPORT_FREQUENCY_DAYS, REMINDER_ADVANCE_DAYS
+- APP_MASTER_KEY (Base64 32+ bytes) master key for application-level field encryption (transactions.description / notes / creditor_name). If unset in dev, a random ephemeral key is generated (NOT for production).
+- APP_ENC_ACTIVE_VERSION (default 1) sets encryption version used for new Transaction rows (future rotations).
+
+### Field Encryption (Transactions)
+Sensitive textual fields in `Transaction` are encrypted at application level using AES-256-GCM (envelope simplificado) and have blind indexes for equality searches:
+
+Encrypted columns (binary):
+- `description_enc`, `notes_enc`, `creditor_name_enc`
+
+Blind index columns (hex HMAC-SHA256):
+- `description_bidx`, `notes_bidx`, `creditor_name_bidx`
+
+Key derivation: master key (APP_MASTER_KEY, base64) -> per-field subkeys via HMAC.
+
+Rotation:
+- Provide new env var `APP_MASTER_KEY_2` (base64) alongside existing `APP_MASTER_KEY`.
+- Run script:
+```fish
+source .venv/bin/activate.fish
+APP_MASTER_KEY=<old64> APP_MASTER_KEY_2=<new64> \
+python -m scripts.rotate_transaction_keys --from-version 1 --to-version 2 --batch-size 500
+```
+- Deploy code that defaults `enc_version` for new rows to 2 (future small change) and later retire old key (keep for read-only rollback window first).
+
+Usage (ORM properties):
+```python
+t.description = "Compra super"   # auto-cifra
+print(t.description)              # descifra transparente
+```
+
+Searching by exact description (case-insensitive, trimmed) uses blind index:
+```python
+from app.utils.crypto_fields import blind_index
+needle = "Compra super"
+h = blind_index(needle, 'description')
+Transaction.query.filter_by(description_bidx=h).all()
+```
+
+Helpers disponibles: `app/services/transaction_search.py` (`find_by_description`, `find_by_notes`, `find_by_creditor`).
+
+Rotation: increment `enc_version` future design (currently always 1). To rotate, introduce new version, re-cifrar en background y actualizar versión por fila.
+
+Important: Do NOT commit a real production `APP_MASTER_KEY`. Provide via secret manager / environment injection (Kubernetes secret, Jenkins credentials binding, etc.).
 
 For local development: copy `.env.example` to `.env` and edit.
 

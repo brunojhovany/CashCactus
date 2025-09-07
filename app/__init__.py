@@ -17,6 +17,15 @@ login_manager = LoginManager()
 def create_app():
     app = Flask(__name__, template_folder='views/templates')
     app.config.from_object(Config)
+    # Logging básico si no hay handlers configurados (evitar duplicados en WSGI reload)
+    import logging, sys, os
+    if not logging.getLogger().handlers:
+        level = os.getenv('LOG_LEVEL', 'INFO').upper()
+        logging.basicConfig(
+            level=level,
+            format='%(asctime)s %(levelname)s %(name)s %(message)s',
+            stream=sys.stdout
+        )
 
     # Aplicar ProxyFix si está habilitado (por defecto sí). Esto permite que url_for(_external=True)
     # use el Host y esquema reales enviados por el Ingress (cabeceras X-Forwarded-*).
@@ -93,6 +102,92 @@ def create_app():
     # Crear tablas
     with app.app_context():
         db.create_all()
+        # Auto-migración mínima para nuevas columnas cifradas de transactions si faltan
+        from sqlalchemy import inspect
+        try:
+            inspector = inspect(db.engine)
+            cols = {c['name'] for c in inspector.get_columns('transactions')}
+            alter_stmts = []
+            wanted = {
+                'description_enc': 'BLOB',
+                'description_bidx': 'VARCHAR(64)',
+                'notes_enc': 'BLOB',
+                'notes_bidx': 'VARCHAR(64)',
+                'creditor_name_enc': 'BLOB',
+                'creditor_name_bidx': 'VARCHAR(64)',
+                'enc_version': 'SMALLINT',
+                # nuevos campos cifrados numéricos
+                'amount_enc': 'BLOB',
+                # en account y credit_card hay columnas en otras tablas; sólo las de transactions aquí
+            }
+            for col, ddl in wanted.items():
+                if col not in cols:
+                    # SQLite soporta ALTER TABLE ADD COLUMN sencillo
+                    alter_stmts.append(f'ALTER TABLE transactions ADD COLUMN {col} {ddl}')
+            with db.engine.begin() as conn:
+                for stmt in alter_stmts:
+                    try:
+                        conn.exec_driver_sql(stmt)
+                    except Exception:
+                        pass
+                # Relajar NOT NULL de columnas legacy (description, notes, creditor_name, amount) si existen en DB
+                try:
+                    txn_columns = inspector.get_columns('transactions')
+                    legacy_targets = {c['name']: c for c in txn_columns if c['name'] in ('description','notes','creditor_name','amount')}
+                    dialect_name = db.engine.dialect.name
+                    for name, meta in legacy_targets.items():
+                        if not meta.get('nullable', True):
+                            if dialect_name == 'postgresql':
+                                # Drop NOT NULL
+                                conn.exec_driver_sql(f'ALTER TABLE transactions ALTER COLUMN {name} DROP NOT NULL')
+                            elif dialect_name == 'sqlite':
+                                # SQLite no permite DROP NOT NULL fácilmente sin recrear tabla; se omite.
+                                pass
+                except Exception:
+                    pass
+                # Auto-alter para cuentas: balance_enc y enc_version
+                try:
+                    acct_cols = {c['name'] for c in inspector.get_columns('accounts')}
+                    acct_alters = []
+                    if 'balance_enc' not in acct_cols:
+                        acct_alters.append('ALTER TABLE accounts ADD COLUMN balance_enc BLOB')
+                    if 'enc_version' not in acct_cols:
+                        acct_alters.append('ALTER TABLE accounts ADD COLUMN enc_version SMALLINT')
+                    for stmt in acct_alters:
+                        try:
+                            conn.exec_driver_sql(stmt)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                # Auto-alter para tarjetas: current_balance_enc y enc_version
+                try:
+                    cc_cols = {c['name'] for c in inspector.get_columns('credit_cards')}
+                    cc_alters = []
+                    if 'current_balance_enc' not in cc_cols:
+                        cc_alters.append('ALTER TABLE credit_cards ADD COLUMN current_balance_enc BLOB')
+                    if 'enc_version' not in cc_cols:
+                        cc_alters.append('ALTER TABLE credit_cards ADD COLUMN enc_version SMALLINT')
+                    for stmt in cc_alters:
+                        try:
+                            conn.exec_driver_sql(stmt)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                # Relajar NOT NULL en cuentas.balance y tarjetas.current_balance (Postgres)
+                try:
+                    if db.engine.dialect.name == 'postgresql':
+                        acct_cols_meta = {c['name']: c for c in inspector.get_columns('accounts')}
+                        if 'balance' in acct_cols_meta and not acct_cols_meta['balance'].get('nullable', True):
+                            conn.exec_driver_sql('ALTER TABLE accounts ALTER COLUMN balance DROP NOT NULL')
+                        cc_cols_meta = {c['name']: c for c in inspector.get_columns('credit_cards')}
+                        if 'current_balance' in cc_cols_meta and not cc_cols_meta['current_balance'].get('nullable', True):
+                            conn.exec_driver_sql('ALTER TABLE credit_cards ALTER COLUMN current_balance DROP NOT NULL')
+                except Exception:
+                    pass
+        except Exception:
+            pass
     
     # Inicializar scheduler para recordatorios
     from app.services.scheduler import init_scheduler

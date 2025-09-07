@@ -4,6 +4,9 @@ from app.models.account import Account
 from app.models.transaction import Transaction
 from app import db
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AccountController:
     
@@ -24,6 +27,7 @@ class AccountController:
         """Crear nueva cuenta"""
         if request.method == 'POST':
             try:
+                logger.debug('Inicio create_account payload=%s', {k: v for k, v in request.form.items()})
                 name = request.form.get('name')
                 account_type = request.form.get('account_type')
                 # Soportar tanto 'initial_balance' como 'balance' desde el formulario
@@ -66,6 +70,7 @@ class AccountController:
                 
                 db.session.add(account)
                 db.session.flush()  # Esto asigna el ID sin hacer commit
+                logger.debug('Cuenta provisional creada id=%s user_id=%s balance=%s', account.id, current_user.id, account.balance)
                 
                 # Si hay balance inicial, crear transacción
                 if initial_balance != 0:
@@ -78,9 +83,23 @@ class AccountController:
                         transaction_type="income" if initial_balance > 0 else "expense",
                         date=datetime.now().date()
                     )
+                    # Transitional: si la base todavía tiene columna legacy 'description' NOT NULL, aseguremos su atributo.
+                    if hasattr(transaction, 'description_enc') and not hasattr(Transaction, 'description_col_checked'):
+                        from sqlalchemy import inspect as _insp
+                        try:
+                            insp = _insp(db.engine)
+                            cols = {c['name']: c for c in insp.get_columns('transactions')}
+                            if 'description' in cols and not cols['description'].get('nullable', True):
+                                # Añadir atributo dinámico para emisión en INSERT si el ORM aún referencia la columna legacy.
+                                setattr(transaction, 'description', 'Saldo inicial')  # type: ignore
+                        except Exception:
+                            pass
+                        Transaction.description_col_checked = True  # type: ignore
                     db.session.add(transaction)
+                    logger.debug('Transacción inicial creada tx_temp user_id=%s account_id=%s amount=%s', current_user.id, account.id, initial_balance)
                 
                 db.session.commit()
+                logger.info('Cuenta creada correctamente id=%s user_id=%s', account.id, current_user.id)
                 flash('Cuenta creada exitosamente.', 'success')
                 return redirect(url_for('main.accounts'))
                 
@@ -88,6 +107,7 @@ class AccountController:
                 flash('El saldo inicial debe ser un número válido.', 'error')
             except Exception as e:
                 db.session.rollback()
+                logger.exception('Fallo creando cuenta user_id=%s', current_user.id)
                 flash('Error al crear la cuenta.', 'error')
         
         account_types = [

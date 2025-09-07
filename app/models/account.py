@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from decimal import Decimal, ROUND_HALF_UP
 from app import db
+from app.utils.crypto_fields import encrypt_field, decrypt_field, get_active_enc_version
 
 class Account(db.Model):
     __tablename__ = 'accounts'
@@ -9,7 +11,8 @@ class Account(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     account_type = db.Column(db.String(50), nullable=False)  # 'checking', 'savings', 'investment', 'debt'
-    balance = db.Column(db.Float, default=0.0)
+    balance_enc = db.Column(db.LargeBinary, nullable=False)
+    enc_version = db.Column(db.SmallInteger, default=get_active_enc_version)
     bank_name = db.Column(db.String(100))
     # Deprecated sensitive field: previously stored full account numbers.
     # Now unused and should remain NULL. Plan: create migration to DROP COLUMN accounts.account_number.
@@ -89,13 +92,14 @@ class Account(db.Model):
                     calculated_balance += transaction.amount
                 else:  # expense or transfer
                     calculated_balance -= transaction.amount
-                
         return calculated_balance
     
     def update_balance(self):
         """Actualizar el balance de la cuenta basado en las transacciones"""
-        self.balance = self.calculate_current_balance()
-        return self.balance
+        new_value = self.calculate_current_balance()
+        # usar setter cifrado
+        self.balance = new_value
+        return new_value
     
     def get_account_type_display(self):
         """Obtener nombre legible del tipo de cuenta"""
@@ -379,3 +383,20 @@ class Account(db.Model):
     
     def __repr__(self):
         return f'<Account {self.name}>'
+
+    # ---- Accesores cifrados ----
+    @property
+    def balance(self) -> float:
+        txt = decrypt_field(self.balance_enc, 'account_balance', self.enc_version)
+        if txt is None:
+            return 0.0
+        return float(Decimal(txt))
+
+    @balance.setter
+    def balance(self, value: float | int | str):
+        if value is None:
+            raise ValueError('balance no puede ser None')
+        if not self.enc_version:
+            self.enc_version = get_active_enc_version()
+        dec = Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.balance_enc = encrypt_field(str(dec), 'account_balance', self.enc_version)

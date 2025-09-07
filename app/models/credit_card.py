@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 from app import db
+from app.utils.crypto_fields import encrypt_field, decrypt_field, get_active_enc_version
 
 class CreditCard(db.Model):
     __tablename__ = 'credit_cards'
@@ -10,7 +12,8 @@ class CreditCard(db.Model):
     bank_name = db.Column(db.String(100))
     last_four_digits = db.Column(db.String(4))
     credit_limit = db.Column(db.Float, nullable=False)
-    current_balance = db.Column(db.Float, default=0.0)
+    current_balance_enc = db.Column(db.LargeBinary, nullable=False)
+    enc_version = db.Column(db.SmallInteger, default=get_active_enc_version)
     minimum_payment = db.Column(db.Float, default=0.0)
     due_date = db.Column(db.Integer)  # Día del mes (1-31)
     closing_date = db.Column(db.Integer)  # Día del mes (1-31)
@@ -78,10 +81,10 @@ class CreditCard(db.Model):
     def update_balance(self):
         """Actualizar balance basado en las transacciones"""
         from app.models.transaction import Transaction
-        
+
         transactions = Transaction.query.filter_by(credit_card_id=self.id).all()
         calculated_balance = 0.0
-        
+
         for transaction in transactions:
             if transaction.transaction_type == 'expense':
                 # Gastos aumentan la deuda de la tarjeta
@@ -89,10 +92,27 @@ class CreditCard(db.Model):
             elif transaction.transaction_type == 'income':
                 # Pagos reducen la deuda de la tarjeta
                 calculated_balance -= transaction.amount
-        
+
         self.current_balance = max(0.0, calculated_balance)  # No permitir balance negativo
         self.update_minimum_payment()
         return self.current_balance
     
     def __repr__(self):
         return f'<CreditCard {self.name}>'
+
+    # ---- Accesores cifrados ----
+    @property
+    def current_balance(self) -> float:
+        txt = decrypt_field(self.current_balance_enc, 'cc_current_balance', self.enc_version)
+        if txt is None:
+            return 0.0
+        return float(Decimal(txt))
+
+    @current_balance.setter
+    def current_balance(self, value: float | int | str):
+        if value is None:
+            raise ValueError('current_balance no puede ser None')
+        if not self.enc_version:
+            self.enc_version = get_active_enc_version()
+        dec = Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        self.current_balance_enc = encrypt_field(str(dec), 'cc_current_balance', self.enc_version)

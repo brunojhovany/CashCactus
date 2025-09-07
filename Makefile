@@ -70,10 +70,32 @@ docker-build:  ## Construir imagen Docker
 docker-run:  ## Ejecutar en Docker
 	docker run -p 5000:5000 finanzas-app
 
+# --- Migraciones Alembic ---
+alembic-current:  ## Mostrar revision actual de la DB
+	ALEMBIC_CONFIG=migrations/alembic.ini alembic current
+
+alembic-upgrade:  ## Aplicar migraciones hasta head
+	@if [ -z "$$SECRET_KEY" ]; then echo "SECRET_KEY no definido"; exit 1; fi
+	ALEMBIC_CONFIG=migrations/alembic.ini alembic upgrade head
+
+alembic-revision:  ## Crear nueva migración autogenerada (usar VAR msg="mensaje")
+	@if [ -z "$$msg" ]; then echo "Usar: make alembic-revision msg=\"descripcion\""; exit 1; fi
+	@if [ -z "$$SECRET_KEY" ]; then echo "SECRET_KEY no definido"; exit 1; fi
+	ALEMBIC_CONFIG=migrations/alembic.ini alembic revision --autogenerate -m "$$msg"
+
+# --- Rotación de llaves (Transactions) ---
+rotate-keys:  ## Re-cifrar campos Transaction de una versión a otra (vars: FROM=1 TO=2 BATCH=500)
+	@if [ -z "$$APP_MASTER_KEY" ] || [ -z "$$APP_MASTER_KEY_$(TO)" ]; then echo "Definir APP_MASTER_KEY y APP_MASTER_KEY_$(TO)"; exit 1; fi
+	python -m scripts.rotate_transaction_keys --from-version $(FROM) --to-version $(TO) --batch-size $(BATCH)
+
+legacy-migrate-tx:  ## Migrar columnas plaintext a cifrado (vars: BATCH=500 NULL_AFTER=0 DRY=0)
+	@if [ -z "$$APP_MASTER_KEY" ]; then echo "Definir APP_MASTER_KEY"; exit 1; fi
+	python -m scripts.migrate_legacy_transaction_plaintext --batch-size $(BATCH) $(if $(filter 1,$(NULL_AFTER)),--null-after,) $(if $(filter 1,$(DRY)),--dry-run,)
+
 # Comandos para desarrollo
 setup-dev:  ## Configurar entorno de desarrollo
 	$(PIP) install -r requirements.txt
-	$(MAKE) init-db
+	$(MAKE) init-db																																																												
 
 check:  ## Verificar que todo funciona correctamente
 	$(MAKE) lint
