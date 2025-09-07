@@ -462,6 +462,7 @@
             body.sidebar-open { overflow: hidden; }
         }
     </style>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/cashcactus_favicon.png') }}">
 </head>
 <body>
     <!-- Header moderno -->
@@ -473,7 +474,7 @@
             </button>
             {% endif %}
             <a href="{{ url_for('main.dashboard') }}" class="logo" aria-label="Ir al dashboard">
-                <img class="logo-img" src="{{ url_for('static', filename='img/cashcactus.png') }}" alt="Logo CashCactus" />
+                <img class="logo-img" src="{{ url_for('static', filename='img/cashcactus_topbar.png') }}" alt="Logo CashCactus" />
                 <span class="logo-text">CashCactus</span>
             </a>
             {% if current_user.is_authenticated %}
