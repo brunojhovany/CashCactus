@@ -186,6 +186,130 @@ def create_app():
                             conn.exec_driver_sql('ALTER TABLE credit_cards ALTER COLUMN current_balance DROP NOT NULL')
                 except Exception:
                     pass
+                # Backfill de columnas cifradas numéricas si están vacías (opcional)
+                try:
+                    if os.environ.get('AUTO_BACKFILL_ENCRYPTED', '1') == '1':
+                        from decimal import Decimal
+                        from app.models.transaction import Transaction as _Tx
+                        from app.models.account import Account as _Acct
+                        from app.models.credit_card import CreditCard as _CC
+                        active_ver = int(os.getenv('APP_ENC_ACTIVE_VERSION', '1'))
+
+                        # Helper: existe columna en tabla
+                        def _has_col(table: str, col: str) -> bool:
+                            try:
+                                return col in {c['name'] for c in inspector.get_columns(table)}
+                            except Exception:
+                                return False
+
+                        # 1) Rellenar transactions.amount_enc desde transactions.amount (si existe)
+                        if _has_col('transactions', 'amount_enc') and _has_col('transactions', 'amount'):
+                            more = True
+                            while more:
+                                rows = conn.exec_driver_sql(
+                                    'SELECT id, amount FROM transactions WHERE amount_enc IS NULL AND amount IS NOT NULL LIMIT 500'
+                                ).fetchall()
+                                more = len(rows) == 500
+                                if not rows:
+                                    break
+                                for rid, amt in rows:
+                                    try:
+                                        tx = _Tx.query.get(rid)
+                                        if tx is None:
+                                            continue
+                                        # setter cifrará y fijará enc_version si falta
+                                        tx.amount = float(amt)
+                                    except Exception:
+                                        # continuar con el siguiente
+                                        pass
+                                try:
+                                    db.session.commit()
+                                except Exception:
+                                    db.session.rollback()
+                                    break
+
+                        # 2) Asegurar enc_version en tablas con *_enc poblado
+                        try:
+                            if _has_col('accounts', 'enc_version') and _has_col('accounts', 'balance_enc'):
+                                conn.exec_driver_sql('UPDATE accounts SET enc_version = :v WHERE enc_version IS NULL AND balance_enc IS NOT NULL', {'v': active_ver})
+                        except Exception:
+                            pass
+                        try:
+                            if _has_col('credit_cards', 'enc_version') and _has_col('credit_cards', 'current_balance_enc'):
+                                conn.exec_driver_sql('UPDATE credit_cards SET enc_version = :v WHERE enc_version IS NULL AND current_balance_enc IS NOT NULL', {'v': active_ver})
+                        except Exception:
+                            pass
+
+                        # 3) Rellenar accounts.balance_enc: si existe columna legacy 'balance', úsala; si no, recalcula
+                        if _has_col('accounts', 'balance_enc'):
+                            if _has_col('accounts', 'balance'):
+                                rows = conn.exec_driver_sql(
+                                    'SELECT id, COALESCE(balance, 0) FROM accounts WHERE balance_enc IS NULL'
+                                ).fetchall()
+                                for rid, bal in rows:
+                                    try:
+                                        acct = _Acct.query.get(rid)
+                                        if acct is None:
+                                            continue
+                                        acct.balance = float(bal)
+                                    except Exception:
+                                        pass
+                                try:
+                                    db.session.commit()
+                                except Exception:
+                                    db.session.rollback()
+                            else:
+                                # Recalcular desde transacciones si no hay columna legacy
+                                ids = [r[0] for r in conn.exec_driver_sql('SELECT id FROM accounts WHERE balance_enc IS NULL').fetchall()]
+                                for rid in ids:
+                                    acct = _Acct.query.get(rid)
+                                    if not acct:
+                                        continue
+                                    try:
+                                        acct.update_balance()
+                                    except Exception:
+                                        pass
+                                try:
+                                    db.session.commit()
+                                except Exception:
+                                    db.session.rollback()
+
+                        # 4) Rellenar credit_cards.current_balance_enc: usar legacy si existe; si no, recalcular
+                        if _has_col('credit_cards', 'current_balance_enc'):
+                            if _has_col('credit_cards', 'current_balance'):
+                                rows = conn.exec_driver_sql(
+                                    'SELECT id, COALESCE(current_balance, 0) FROM credit_cards WHERE current_balance_enc IS NULL'
+                                ).fetchall()
+                                for rid, bal in rows:
+                                    try:
+                                        cc = _CC.query.get(rid)
+                                        if not cc:
+                                            continue
+                                        cc.current_balance = float(bal)
+                                        cc.update_minimum_payment()
+                                    except Exception:
+                                        pass
+                                try:
+                                    db.session.commit()
+                                except Exception:
+                                    db.session.rollback()
+                            else:
+                                ids = [r[0] for r in conn.exec_driver_sql('SELECT id FROM credit_cards WHERE current_balance_enc IS NULL').fetchall()]
+                                for rid in ids:
+                                    cc = _CC.query.get(rid)
+                                    if not cc:
+                                        continue
+                                    try:
+                                        cc.update_balance()
+                                        cc.update_minimum_payment()
+                                    except Exception:
+                                        pass
+                                try:
+                                    db.session.commit()
+                                except Exception:
+                                    db.session.rollback()
+                except Exception:
+                    pass
         except Exception:
             pass
     
