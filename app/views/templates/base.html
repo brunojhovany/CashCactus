@@ -559,7 +559,8 @@
             <div class="nav-section">
                 <div class="nav-section-title">Finanzas</div>
                 <div class="nav-item">
-                    <a class="nav-link {% if 'account' in request.endpoint %}active{% endif %}" href="{{ url_for('main.accounts') }}">
+                    {% set ep = request.endpoint or '' %}
+                    <a class="nav-link {% if ep.startswith('main.account') or ep in ['main.create_account','main.edit_account','main.delete_account'] %}active{% endif %}" href="{{ url_for('main.accounts') }}">
                         <span class="material-icons">account_balance</span>
                         <span>Cuentas</span>
                     </a>

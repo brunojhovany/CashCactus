@@ -1,128 +1,98 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Editar Cuenta{% endblock %}
+{% block title %}Editar Deuda{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
             <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-edit me-2"></i>Editar Cuenta
-                    </h5>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-credit-card text-danger me-2"></i>Editar Deuda</h4>
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('main.debt_detail', debt_id=debt_account.id) }}">
+                        <i class="fas fa-eye me-1"></i>Ver detalle
+                    </a>
                 </div>
                 <div class="card-body">
                     <form method="POST">
-                        <div class="mb-3">
-                            <label for="name" class="form-label">Nombre de la Cuenta</label>
-                            <input type="text" class="form-control" id="name" name="name" 
-                                   value="{{ account.name }}" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="account_type" class="form-label">Tipo de Cuenta</label>
-                            <select class="form-select" id="account_type" name="account_type" required>
-                                <option value="">Seleccionar tipo...</option>
-                                <option value="checking" {% if account.account_type == 'checking' %}selected{% endif %}>Cuenta Corriente</option>
-                                <option value="savings" {% if account.account_type == 'savings' %}selected{% endif %}>Cuenta de Ahorros</option>
-                                <option value="credit" {% if account.account_type == 'credit' %}selected{% endif %}>Línea de Crédito</option>
-                                <option value="investment" {% if account.account_type == 'investment' %}selected{% endif %}>Cuenta de Inversión</option>
-                                <option value="cash" {% if account.account_type == 'cash' %}selected{% endif %}>Efectivo</option>
-                            </select>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="bank_name" class="form-label">Banco</label>
-                            <input type="text" class="form-control" id="bank_name" name="bank_name" 
-                                   value="{{ account.bank_name }}" placeholder="Nombre del banco">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="account_number" class="form-label">Número de Cuenta (opcional)</label>
-                            <input type="text" class="form-control" id="account_number" name="account_number" 
-                                   value="{{ account.account_number }}" placeholder="Últimos 4 dígitos">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="initial_balance" class="form-label">Saldo Inicial</label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" step="0.01" class="form-control" id="initial_balance" 
-                                       name="initial_balance" value="{{ account.balance }}" required>
-                            </div>
-                            <div class="form-text">Este será el saldo actual de la cuenta</div>
-                        </div>
-                        
-                        <!-- Campos de Inversión (solo para cuentas de ahorro e inversión) -->
-                        <div id="investment-fields" class="mb-3" style="display: {% if account.account_type in ['savings', 'investment'] %}block{% else %}none{% endif %};">
-                            <div class="card bg-light">
-                                <div class="card-header">
-                                    <h6 class="mb-0"><i class="fas fa-chart-line me-2"></i>Configuración de Inversión</h6>
+                        <div class="row">
+                            <!-- Información básica -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Nombre de la Deuda *</label>
+                                    <input type="text" id="name" name="name" class="form-control" required value="{{ debt_account.name }}">
                                 </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="generates_interest" 
-                                                   name="generates_interest" {% if account.generates_interest %}checked{% endif %}>
-                                            <label class="form-check-label" for="generates_interest">
-                                                Esta cuenta genera intereses/rendimientos
-                                            </label>
-                                        </div>
+
+                                <div class="mb-3">
+                                    <label for="creditor_name" class="form-label">Acreedor *</label>
+                                    <input type="text" id="creditor_name" name="creditor_name" class="form-control" required value="{{ debt_account.creditor_name }}">
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="original_amount" class="form-label">Monto Original *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" step="0.01" min="0" id="original_amount" name="original_amount" class="form-control" value="{{ debt_account.original_debt_amount }}" required>
                                     </div>
-                                    
-                                    <div id="interest-details" style="display: {% if account.generates_interest %}block{% else %}none{% endif %};">
-                                        <div class="mb-3">
-                                            <label for="interest_rate" class="form-label">Tasa de Interés Anual (%)</label>
-                                            <div class="input-group">
-                                                <input type="number" class="form-control" id="interest_rate" name="interest_rate" 
-                                                       step="0.01" min="0" max="100" value="{{ account.interest_rate or 0.00 }}">
-                                                <span class="input-group-text">%</span>
-                                            </div>
-                                            <div class="form-text">Tasa de interés anual (ej: 5.25 para 5.25%)</div>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="investment_type" class="form-label">Tipo de Inversión</label>
-                                            <select class="form-select" id="investment_type" name="investment_type">
-                                                <option value="">Seleccionar tipo...</option>
-                                                <option value="savings_account" {% if account.investment_type == 'savings_account' %}selected{% endif %}>Cuenta de Ahorros</option>
-                                                <option value="time_deposit" {% if account.investment_type == 'time_deposit' %}selected{% endif %}>Depósito a Plazo</option>
-                                                <option value="mutual_fund" {% if account.investment_type == 'mutual_fund' %}selected{% endif %}>Fondo Mutuo</option>
-                                                <option value="stocks" {% if account.investment_type == 'stocks' %}selected{% endif %}>Acciones</option>
-                                                <option value="bonds" {% if account.investment_type == 'bonds' %}selected{% endif %}>Bonos</option>
-                                                <option value="crypto" {% if account.investment_type == 'crypto' %}selected{% endif %}>Criptomonedas</option>
-                                                <option value="other" {% if account.investment_type == 'other' %}selected{% endif %}>Otro</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <div class="mb-3">
-                                            <label for="compound_frequency" class="form-label">Frecuencia de Capitalización</label>
-                                            <select class="form-select" id="compound_frequency" name="compound_frequency">
-                                                <option value="monthly" {% if account.compound_frequency == 'monthly' %}selected{% endif %}>Mensual</option>
-                                                <option value="quarterly" {% if account.compound_frequency == 'quarterly' %}selected{% endif %}>Trimestral</option>
-                                                <option value="semi_annual" {% if account.compound_frequency == 'semi_annual' %}selected{% endif %}>Semestral</option>
-                                                <option value="annual" {% if account.compound_frequency == 'annual' %}selected{% endif %}>Anual</option>
-                                            </select>
-                                            <div class="form-text">Con qué frecuencia se calculan y aplican los intereses</div>
-                                        </div>
+                                    <div class="form-text">Monto total de la deuda al inicio.</div>
+                                </div>
+                            </div>
+
+                            <!-- Términos y estado -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="current_balance" class="form-label">Deuda Actual</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" step="0.01" min="0" id="current_balance" name="current_balance" class="form-control" value="{{ debt_account.current_balance }}">
                                     </div>
+                                    <div class="form-text">Ingresa la deuda actual para corregir el balance si es necesario.</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="interest_rate" class="form-label">Tasa de Interés Anual (%)</label>
+                                    <div class="input-group">
+                                        <input type="number" step="0.01" min="0" id="interest_rate" name="interest_rate" class="form-control" value="{{ debt_account.interest_rate or 0 }}">
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="minimum_payment" class="form-label">Pago Mínimo Mensual</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" step="0.01" min="0" id="minimum_payment" name="minimum_payment" class="form-control" value="{{ debt_account.minimum_payment or 0 }}">
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="payment_due_day" class="form-label">Día de Vencimiento</label>
+                                    <select id="payment_due_day" name="payment_due_day" class="form-select">
+                                        {% for day in range(1, 32) %}
+                                            <option value="{{ day }}" {% if debt_account.payment_due_day == day %}selected{% endif %}>{{ day }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="status" class="form-label">Estado</label>
+                                    <select id="status" name="status" class="form-select">
+                                        <option value="active" {% if debt_account.status == 'active' %}selected{% endif %}>Activa</option>
+                                        <option value="paid_off" {% if debt_account.status == 'paid_off' %}selected{% endif %}>Pagada</option>
+                                        <option value="defaulted" {% if debt_account.status == 'defaulted' %}selected{% endif %}>En Mora</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
-                        
+
+                        <!-- Notas -->
                         <div class="mb-3">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="is_active" 
-                                       name="is_active" {% if account.is_active %}checked{% endif %}>
-                                <label class="form-check-label" for="is_active">
-                                    Cuenta activa
-                                </label>
-                            </div>
+                            <label for="notes" class="form-label">Notas</label>
+                            <textarea id="notes" name="notes" class="form-control" rows="3" placeholder="Detalles adicionales (opcional)">{{ debt_account.notes or '' }}</textarea>
                         </div>
-                        
+
                         <div class="d-flex justify-content-between">
-                            <a href="{{ url_for('main.accounts') }}" class="btn btn-secondary">
+                            <a href="{{ url_for('main.debt_accounts') }}" class="btn btn-secondary">
                                 <i class="fas fa-arrow-left me-1"></i>Cancelar
                             </a>
                             <button type="submit" class="btn btn-primary">
@@ -135,34 +105,4 @@
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const accountTypeSelect = document.getElementById('account_type');
-    const investmentFields = document.getElementById('investment-fields');
-    const generatesInterestCheckbox = document.getElementById('generates_interest');
-    const interestDetails = document.getElementById('interest-details');
-    
-    // Mostrar/ocultar campos de inversión según el tipo de cuenta
-    accountTypeSelect.addEventListener('change', function() {
-        const accountType = this.value;
-        if (accountType === 'savings' || accountType === 'investment') {
-            investmentFields.style.display = 'block';
-        } else {
-            investmentFields.style.display = 'none';
-            generatesInterestCheckbox.checked = false;
-            interestDetails.style.display = 'none';
-        }
-    });
-    
-    // Mostrar/ocultar detalles de interés
-    generatesInterestCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            interestDetails.style.display = 'block';
-        } else {
-            interestDetails.style.display = 'none';
-        }
-    });
-});
-</script>
 {% endblock %}

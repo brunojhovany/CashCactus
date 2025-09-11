@@ -50,6 +50,15 @@ class DailyMaintenanceService:
                     # Continuar con siguientes cuentas sin interrumpir el batch
                     pass
 
+                # Aplicar interés mensual de deuda en el día de vencimiento (idempotente por last_interest_calculation)
+                try:
+                    if account.is_debt_account and account.is_active and (account.payment_due_day or 1) == datetime.utcnow().day:
+                        tx = account.apply_monthly_interest()
+                        if tx is not None:
+                            created_auto_entries += 1
+                except Exception:
+                    pass
+
                 # Recalcular balance en base a transacciones
                 try:
                     account.update_balance()

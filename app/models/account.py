@@ -129,18 +129,16 @@ class Account(db.Model):
     
     def calculate_monthly_interest(self):
         """Calcular interés mensual para cuentas de deuda"""
-        if not self.is_debt_account or self.interest_rate == 0:
+        if not self.is_debt_account or not self.interest_rate:
             return 0.0
-        
-        # Solo calcular intereses si hay deuda pendiente (balance negativo para deudas)
-        if self.balance >= 0:
+
+        # Para deudas, el balance representa lo que se debe (valor positivo). Si está en 0 o menos, no hay interés.
+        current_debt = max(float(self.balance), 0.0)
+        if current_debt <= 0:
             return 0.0
-        
-        # Calcular interés mensual sobre el balance actual
-        monthly_rate = self.interest_rate / 100 / 12  # Convertir % anual a decimal mensual
-        interest_amount = abs(self.balance) * monthly_rate
-        
-        return interest_amount
+
+        monthly_rate = self.interest_rate / 100 / 12  # % anual -> decimal mensual
+        return current_debt * monthly_rate
     
     def apply_monthly_interest(self):
         """Aplicar interés mensual y crear transacción automática"""
@@ -148,32 +146,32 @@ class Account(db.Model):
             return None
         
         interest_amount = self.calculate_monthly_interest()
-        
-        if interest_amount > 0:
-            from app.models.transaction import Transaction
-            
-            # Crear transacción de interés
-            interest_transaction = Transaction(
-                user_id=self.user_id,
-                account_id=self.id,
-                amount=interest_amount,
-                description=f'Interés mensual - {self.creditor_name or self.name}',
-                category='debt_interest',
-                transaction_type='expense',
-                date=datetime.utcnow(),
-                notes=f'Interés calculado automáticamente - Tasa: {self.interest_rate}% anual',
-                is_automatic=True
-            )
-            
-            db.session.add(interest_transaction)
-            
-            # Actualizar balance (para deudas, gastos aumentan el balance negativo)
-            self.balance -= interest_amount
-            self.last_interest_calculation = datetime.utcnow()
-            
-            return interest_transaction
-        
-        return None
+
+        if interest_amount <= 0:
+            return None
+
+        from app.models.transaction import Transaction
+
+        # Para deudas: los cargos (intereses) aumentan la deuda → usar 'income'
+        interest_transaction = Transaction(
+            user_id=self.user_id,
+            account_id=self.id,
+            amount=interest_amount,
+            description=f'Interés mensual - {self.creditor_name or self.name}',
+            category='debt_interest',
+            transaction_type='income',
+            date=datetime.utcnow(),
+            notes=f'Interés calculado automáticamente - Tasa: {self.interest_rate}% anual',
+            is_automatic=True
+        )
+
+        db.session.add(interest_transaction)
+
+        # Aumentar saldo de la deuda (positivo)
+        self.balance = float(self.balance) + interest_amount
+        self.last_interest_calculation = datetime.utcnow()
+
+        return interest_transaction
     
     def calculate_debt_projection(self, months=12):
         """Calcular proyección de deuda con pagos mínimos"""

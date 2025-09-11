@@ -300,11 +300,12 @@ class DebtController:
                 flash('Cuenta de deuda actualizada exitosamente.', 'success')
                 return redirect(url_for('main.debt_detail', debt_id=debt_id))
                 
-            except ValueError as e:
+            except ValueError:
                 db.session.rollback()
                 flash('Error en los datos ingresados. Verifica que los montos sean números válidos.', 'error')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Error al actualizar la cuenta de deuda: {str(e)}', 'error')
-        
+
+        # Render edit form (GET or after validation errors)
         return render_template('debts/edit.html', debt_account=debt_account)

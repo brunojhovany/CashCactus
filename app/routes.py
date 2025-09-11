@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request, flash, Response
 from flask_login import login_required, current_user
 from app.controllers.auth_controller import AuthController
 from app.controllers.account_controller import AccountController
@@ -235,3 +235,16 @@ def make_debt_payment():
 def apply_debt_interests():
     """Aplicar intereses mensuales a todas las deudas"""
     return DebtController.apply_interests()
+
+# --- Legacy Flutter PWA cleanup ---
+@main_bp.route('/flutter_service_worker.js')
+def flutter_service_worker_cleanup():
+    """Return 410 Gone so browsers auto-unregister old Flutter service workers.
+    See: https://w3c.github.io/ServiceWorker/#update-algorithm (404/410 unregisters)
+    """
+    return Response(
+        '/* Legacy Flutter service worker removed intentionally */',
+        status=410,
+        mimetype='application/javascript',
+        headers={'Cache-Control': 'no-store'}
+    )

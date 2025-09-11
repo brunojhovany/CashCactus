@@ -78,11 +78,14 @@
                                     <div class="mb-3">
                                         <label for="interest_rate" class="form-label">Tasa de Interés Anual (%)</label>
                                         <div class="input-group">
-                                            <input type="number" class="form-control" id="interest_rate" name="interest_rate" 
-                                                   step="0.01" min="0" max="100" value="0.00">
+                          <input type="number" class="form-control" id="interest_rate" name="interest_rate" 
+                              step="0.01" min="0" value="0.00">
                                             <span class="input-group-text">%</span>
                                         </div>
                                         <div class="form-text">Tasa de interés anual (ej: 5.25 para 5.25%)</div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Interés mensual estimado: <strong id="monthly-yield">$0.00</strong></small>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -141,6 +144,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const investmentFields = document.getElementById('investment-fields');
     const generatesInterestCheckbox = document.getElementById('generates_interest');
     const interestDetails = document.getElementById('interest-details');
+    const balanceInput = document.getElementById('balance');
+    const rateInput = document.getElementById('interest_rate');
+    const monthlyYieldEl = document.getElementById('monthly-yield');
+    
+    function updateMonthlyYield(){
+        if (!monthlyYieldEl) return;
+        const bal = parseFloat(balanceInput?.value || '0') || 0;
+        const rateAnnual = parseFloat(rateInput?.value || '0') || 0;
+        const monthly = bal * (rateAnnual/100/12);
+        monthlyYieldEl.textContent = '$' + monthly.toFixed(2);
+    }
     
     // Mostrar/ocultar campos de inversión según el tipo de cuenta
     accountTypeSelect.addEventListener('change', function() {
@@ -158,10 +172,17 @@ document.addEventListener('DOMContentLoaded', function() {
     generatesInterestCheckbox.addEventListener('change', function() {
         if (this.checked) {
             interestDetails.style.display = 'block';
+        updateMonthlyYield();
         } else {
             interestDetails.style.display = 'none';
         }
     });
+
+    // Actualizar simulación al cambiar monto o tasa
+    balanceInput && balanceInput.addEventListener('input', updateMonthlyYield);
+    rateInput && rateInput.addEventListener('input', updateMonthlyYield);
+    // Inicial
+    updateMonthlyYield();
 });
 </script>
 {% endblock %}
