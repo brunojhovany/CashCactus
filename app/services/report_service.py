@@ -31,7 +31,14 @@ class ReportService:
         ).all()
         
         # Calcular totales
-        total_income = sum(t.amount for t in transactions if t.transaction_type == 'income')
+        # Nota: Los pagos a tarjetas de crédito se registran como 'income' en la entidad
+        # Transaction cuando están asociados a una tarjeta (credit_card_id != None),
+        # ya que reducen la deuda de la tarjeta. Sin embargo, eso no debe contarse
+        # como ingreso real en los reportes (dashboard). Por eso se excluyen.
+        total_income = sum(
+            t.amount for t in transactions
+            if t.transaction_type == 'income' and t.credit_card_id is None
+        )
         total_expenses = sum(t.amount for t in transactions if t.transaction_type == 'expense')
         net_income = total_income - total_expenses
         
@@ -533,6 +540,8 @@ class ReportService:
                 Transaction.user_id == user_id,
                 Transaction.account_id == account.id,
                 Transaction.transaction_type == 'income',
+                # Excluir abonos que provienen de pagos a tarjetas (no son ingreso real)
+                Transaction.credit_card_id.is_(None),
                 Transaction.date >= start_date,
                 Transaction.date < end_date
             ).all()

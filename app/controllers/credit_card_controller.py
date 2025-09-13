@@ -223,14 +223,14 @@ class CreditCardController:
                     # Descontar de la cuenta
                     account.balance -= amount
                     
-                    # Crear transacción de egreso para la cuenta bancaria
+                    # Crear transacción de transferencia para la cuenta bancaria
                     account_transaction = Transaction(
                         user_id=current_user.id,
                         account_id=int(account_id),
                         amount=amount,
-                        description=f"Pago a {credit_card.name}",
+                        description=f"Transferencia a {credit_card.name}",
                         category='debt_payment',
-                        transaction_type='expense'  # Para la cuenta es un gasto
+                        transaction_type='transfer'  # Para la cuenta es transferencia (no afecta P&L)
                     )
                     db.session.add(account_transaction)
                 
@@ -239,7 +239,7 @@ class CreditCardController:
                     user_id=current_user.id,
                     credit_card_id=credit_card.id,
                     amount=amount,
-                    description=description,
+                    description=description or f"Pago desde cuenta {account.name if account_id else ''}",
                     category='debt_payment',
                     transaction_type='income'  # Para la tarjeta es ingreso (pago)
                 )
