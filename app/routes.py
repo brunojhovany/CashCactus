@@ -8,6 +8,7 @@ from app.controllers.report_controller import ReportController
 from app.controllers.debt_controller import DebtController
 from app.services.payment_reminder_service import PaymentReminderService
 from app.services.report_service import ReportService
+from app.services.balance_maintenance_service import BalanceMaintenanceService
 from datetime import datetime
 
 # Crear blueprint principal
@@ -53,6 +54,10 @@ def index():
 @login_required
 def dashboard():
     """Dashboard principal"""
+    # Recalcular balances antes de mostrar dashboard (safety net para cifrado)
+    # Delegado a servicio especializado para mantener separación de concerns
+    BalanceMaintenanceService.recalculate_user_balances(current_user.id)
+    
     # Obtener resumen financiero
     current_date = datetime.now()
     monthly_summary = ReportService.get_monthly_summary(

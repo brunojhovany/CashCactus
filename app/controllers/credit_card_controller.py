@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from app.models.credit_card import CreditCard
 from app.models.transaction import Transaction
 from app.services.payment_reminder_service import PaymentReminderService
+from app.services.balance_maintenance_service import BalanceMaintenanceService
 from app import db
 from datetime import datetime
 
@@ -12,41 +13,10 @@ class CreditCardController:
     @login_required
     def list_credit_cards():
         """Listar tarjetas de crédito del usuario"""
+        # Recalcular saldos usando servicio centralizado
+        BalanceMaintenanceService.recalculate_user_balances(current_user.id)
+        
         credit_cards = CreditCard.query.filter_by(user_id=current_user.id, is_active=True).all()
-
-        any_changed = False
-        for card in credit_cards:
-            try:
-                prev = round(card.current_balance, 2)
-                new_bal = round(card.update_balance(), 2)
-                if new_bal != prev:
-                    any_changed = True
-            except Exception:
-                # Continuar mostrando aunque falle una tarjeta
-                pass
-        if any_changed:
-            try:
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
-
-        any_updated = False
-        for card in credit_cards:
-            try:
-                prev = card.current_balance
-                recalculated = card.update_balance()
-                # Si cambió materialmente, persistir
-                if abs((recalculated or 0) - (prev or 0)) > 0.005:
-                    any_updated = True
-                    db.session.add(card)
-            except Exception:
-                # No bloquear la vista por un error puntual
-                pass
-        if any_updated:
-            try:
-                db.session.commit()
-            except Exception:
-                db.session.rollback()
         
         # Calcular totales
         total_debt = sum(card.current_balance for card in credit_cards)
@@ -195,15 +165,8 @@ class CreditCardController:
         """Ver detalles de una tarjeta específica"""
         credit_card = CreditCard.query.filter_by(id=card_id, user_id=current_user.id).first_or_404()
 
-        # Asegurar que el saldo esté recalculado antes de mostrar detalles
-        try:
-            before = round(credit_card.current_balance, 2)
-            after = round(credit_card.update_balance(), 2)
-            if after != before:
-                credit_card.update_minimum_payment()
-                db.session.commit()
-        except Exception:
-            db.session.rollback()
+        # Recalcular saldo usando servicio centralizado
+        BalanceMaintenanceService.fix_card_balance(card_id, current_user.id)
         
         # Obtener transacciones recientes
         recent_transactions = Transaction.query.filter(

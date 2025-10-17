@@ -1,25 +1,33 @@
 from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from app.models.account import Account
-from app.models.transaction import Transaction
-from app import db
-from datetime import datetime
+from app.services.account_service import AccountService, AccountDTO
 import logging
 
 logger = logging.getLogger(__name__)
 
 class AccountController:
+    """
+    Controlador HTTP para cuentas bancarias.
+    
+    Responsabilidad: Solo coordinación de peticiones HTTP.
+    Toda la lógica de negocio está delegada a AccountService.
+    """
     
     @staticmethod
     @login_required
     def list_accounts():
         """Listar todas las cuentas del usuario"""
-        accounts = Account.query.filter_by(user_id=current_user.id, is_active=True).all()
-        total_balance = sum(account.balance for account in accounts)
-        
-        return render_template('accounts/list.html', 
-                             accounts=accounts, 
-                             total_balance=total_balance)
+        try:
+            accounts = AccountService.get_user_accounts(current_user.id, include_inactive=False)
+            total_balance = AccountService.get_total_balance(current_user.id)
+            
+            return render_template('accounts/list.html', 
+                                 accounts=accounts, 
+                                 total_balance=total_balance)
+        except Exception as e:
+            logger.exception(f"Error al listar cuentas para user {current_user.id}")
+            flash('Error al cargar las cuentas.', 'error')
+            return render_template('accounts/list.html', accounts=[], total_balance=0)
     
     @staticmethod
     @login_required
@@ -27,94 +35,26 @@ class AccountController:
         """Crear nueva cuenta"""
         if request.method == 'POST':
             try:
-                logger.debug('Inicio create_account payload=%s', {k: v for k, v in request.form.items()})
-                name = request.form.get('name')
-                account_type = request.form.get('account_type')
-                # Soportar tanto 'initial_balance' como 'balance' desde el formulario
-                _ib_raw = request.form.get('initial_balance')
-                if _ib_raw is None or _ib_raw == '':
-                    _ib_raw = request.form.get('balance', 0)
-                try:
-                    initial_balance = float(_ib_raw) if _ib_raw not in (None, '') else 0.0
-                except ValueError:
-                    initial_balance = 0.0
-                bank_name = request.form.get('bank_name')
+                # Parsear y validar datos del formulario
+                dto = AccountDTO.from_form(request.form)
                 
-                if not name or not account_type:
-                    flash('Nombre y tipo de cuenta son obligatorios.', 'error')
-                    return render_template('accounts/create.html')
+                # Delegar creación al servicio
+                account = AccountService.create_account(current_user.id, dto)
                 
-                # Crear nueva cuenta
-                account = Account(
-                    user_id=current_user.id,
-                    name=name,
-                    account_type=account_type,
-                    balance=initial_balance,
-                    bank_name=bank_name
-                )
-                
-                # Campos para cuentas de inversión y ahorro
-                if account_type in ['savings', 'investment']:
-                    generates_interest = request.form.get('generates_interest') == 'on'
-                    interest_rate = float(request.form.get('interest_rate', 0))
-                    investment_type = request.form.get('investment_type')
-                    compound_frequency = request.form.get('compound_frequency', 'monthly')
-                    
-                    account.generates_interest = generates_interest
-                    account.interest_rate = interest_rate
-                    account.investment_type = investment_type
-                    account.compound_frequency = compound_frequency
-                    
-                    if generates_interest:
-                        account.last_interest_calculation = datetime.utcnow()
-                
-                db.session.add(account)
-                db.session.flush()  # Esto asigna el ID sin hacer commit
-                logger.debug('Cuenta provisional creada id=%s user_id=%s balance=%s', account.id, current_user.id, account.balance)
-                
-                # Si hay balance inicial, crear transacción
-                if initial_balance != 0:
-                    transaction = Transaction(
-                        user_id=current_user.id,
-                        account_id=account.id,
-                        amount=abs(initial_balance),
-                        description="Saldo inicial",
-                        category="other",
-                        transaction_type="income" if initial_balance > 0 else "expense",
-                        date=datetime.now().date()
-                    )
-                    # Transitional: si la base todavía tiene columna legacy 'description' NOT NULL, aseguremos su atributo.
-                    if hasattr(transaction, 'description_enc') and not hasattr(Transaction, 'description_col_checked'):
-                        from sqlalchemy import inspect as _insp
-                        try:
-                            insp = _insp(db.engine)
-                            cols = {c['name']: c for c in insp.get_columns('transactions')}
-                            if 'description' in cols and not cols['description'].get('nullable', True):
-                                # Añadir atributo dinámico para emisión en INSERT si el ORM aún referencia la columna legacy.
-                                setattr(transaction, 'description', 'Saldo inicial')  # type: ignore
-                        except Exception:
-                            pass
-                        Transaction.description_col_checked = True  # type: ignore
-                    db.session.add(transaction)
-                    logger.debug('Transacción inicial creada tx_temp user_id=%s account_id=%s amount=%s', current_user.id, account.id, initial_balance)
-                
-                db.session.commit()
-                logger.info('Cuenta creada correctamente id=%s user_id=%s', account.id, current_user.id)
                 flash('Cuenta creada exitosamente.', 'success')
                 return redirect(url_for('main.accounts'))
                 
-            except ValueError:
-                flash('El saldo inicial debe ser un número válido.', 'error')
+            except ValueError as e:
+                # Errores de validación
+                flash(str(e), 'error')
+                logger.warning(f"Validación fallida al crear cuenta para user {current_user.id}: {e}")
             except Exception as e:
-                db.session.rollback()
-                logger.exception('Fallo creando cuenta user_id=%s', current_user.id)
+                # Errores inesperados
+                logger.exception(f'Error inesperado creando cuenta para user {current_user.id}')
                 flash('Error al crear la cuenta.', 'error')
         
-        account_types = [
-            ('checking', 'Cuenta Corriente'),
-            ('savings', 'Cuenta de Ahorros'),
-            ('investment', 'Inversión')
-        ]
+        # Obtener tipos de cuenta para el formulario
+        account_types = AccountService.get_account_types()
         
         return render_template('accounts/create.html', account_types=account_types)
     
@@ -122,84 +62,36 @@ class AccountController:
     @login_required
     def edit_account(account_id):
         """Editar cuenta existente"""
-        account = Account.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
+        # Obtener cuenta actual para mostrar en formulario
+        account = AccountService.get_account_by_id(account_id, current_user.id)
+        if not account:
+            flash('Cuenta no encontrada.', 'error')
+            return redirect(url_for('main.accounts'))
         
         if request.method == 'POST':
             try:
-                # Obtener el balance anterior para calcular diferencia
-                old_balance = account.balance
-                # Soportar 'initial_balance' o 'balance' en edición también
-                _nb_raw = request.form.get('initial_balance')
-                if _nb_raw is None or _nb_raw == '':
-                    _nb_raw = request.form.get('balance', 0)
-                try:
-                    new_balance = float(_nb_raw) if _nb_raw not in (None, '') else 0.0
-                except ValueError:
-                    new_balance = old_balance
+                # Parsear y validar datos del formulario
+                dto = AccountDTO.from_form(request.form)
                 
-                account.name = request.form.get('name')
-                account.account_type = request.form.get('account_type')
-                account.bank_name = request.form.get('bank_name')
-                # account_number intentionally ignored (deprecated)
-                account.balance = new_balance
-                account.is_active = bool(request.form.get('is_active'))
+                # Delegar actualización al servicio
+                account = AccountService.update_account(account_id, current_user.id, dto)
                 
-                # Actualizar campos de inversión
-                if account.account_type in ['savings', 'investment']:
-                    generates_interest = request.form.get('generates_interest') == 'on'
-                    interest_rate = float(request.form.get('interest_rate', 0))
-                    investment_type = request.form.get('investment_type')
-                    compound_frequency = request.form.get('compound_frequency', 'monthly')
-                    
-                    account.generates_interest = generates_interest
-                    account.interest_rate = interest_rate
-                    account.investment_type = investment_type
-                    account.compound_frequency = compound_frequency
-                else:
-                    # Limpiar campos de inversión para otros tipos de cuenta
-                    account.generates_interest = False
-                    account.interest_rate = 0.0
-                    account.investment_type = None
-                    account.compound_frequency = 'monthly'
-                
-                if not account.name or not account.account_type:
-                    flash('Nombre y tipo de cuenta son obligatorios.', 'error')
-                    return render_template('accounts/edit.html', account=account)
-                
-                # Si cambió el balance, crear una transacción de ajuste
-                balance_difference = new_balance - old_balance
-                if balance_difference != 0:
-                    transaction = Transaction(
-                        user_id=current_user.id,
-                        account_id=account.id,
-                        amount=abs(balance_difference),
-                        description=f'Ajuste de saldo - Edición de cuenta',
-                        category='other',
-                        transaction_type='income' if balance_difference > 0 else 'expense',
-                        date=datetime.now().date()
-                    )
-                    db.session.add(transaction)
-                    
-                    # Actualizar balance basado en las transacciones
-                    db.session.flush()  # Para asegurar que la transacción se agrega
-                    account.update_balance()
-                else:
-                    # Solo actualizar el balance directamente si no hay cambio en saldo
-                    account.balance = new_balance
-                
-                db.session.commit()
                 flash('Cuenta actualizada exitosamente.', 'success')
                 return redirect(url_for('main.accounts'))
                 
+            except ValueError as e:
+                # Errores de validación
+                flash(str(e), 'error')
+                logger.warning(f"Validación fallida al actualizar cuenta {account_id}: {e}")
+            except PermissionError as e:
+                flash('No tienes permisos para editar esta cuenta.', 'error')
+                return redirect(url_for('main.accounts'))
             except Exception as e:
-                db.session.rollback()
+                logger.exception(f'Error inesperado actualizando cuenta {account_id}')
                 flash('Error al actualizar la cuenta.', 'error')
         
-        account_types = [
-            ('checking', 'Cuenta Corriente'),
-            ('savings', 'Cuenta de Ahorros'),
-            ('investment', 'Inversión')
-        ]
+        # Obtener tipos de cuenta para el formulario
+        account_types = AccountService.get_account_types()
         
         return render_template('accounts/edit.html', account=account, account_types=account_types)
     
@@ -207,15 +99,14 @@ class AccountController:
     @login_required
     def delete_account(account_id):
         """Eliminar cuenta (desactivar)"""
-        account = Account.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
-        
         try:
-            # En lugar de eliminar, desactivar la cuenta
-            account.is_active = False
-            db.session.commit()
+            # Delegar desactivación al servicio
+            AccountService.delete_account(account_id, current_user.id)
             flash('Cuenta eliminada exitosamente.', 'success')
+        except PermissionError:
+            flash('No tienes permisos para eliminar esta cuenta.', 'error')
         except Exception as e:
-            db.session.rollback()
+            logger.exception(f'Error eliminando cuenta {account_id}')
             flash('Error al eliminar la cuenta.', 'error')
         
         return redirect(url_for('main.accounts'))
@@ -224,47 +115,44 @@ class AccountController:
     @login_required
     def account_details(account_id):
         """Ver detalles de una cuenta específica"""
-        account = Account.query.filter_by(id=account_id, user_id=current_user.id).first_or_404()
-        
-        # Obtener transacciones recientes
-        recent_transactions = Transaction.query.filter(
-            Transaction.account_id == account.id,
-            Transaction.user_id == current_user.id
-        ).order_by(Transaction.date.desc()).limit(20).all()
-        
-        # Calcular estadísticas del mes actual
-        current_date = datetime.now()
-        month_start = datetime(current_date.year, current_date.month, 1)
-        
-        monthly_transactions = Transaction.query.filter(
-            Transaction.account_id == account.id,
-            Transaction.user_id == current_user.id,
-            Transaction.date >= month_start
-        ).all()
-        
-        monthly_income = sum(t.amount for t in monthly_transactions if t.transaction_type == 'income')
-        monthly_expenses = sum(t.amount for t in monthly_transactions if t.transaction_type == 'expense')
-        
-        return render_template('accounts/details.html',
-                             account=account,
-                             recent_transactions=recent_transactions,
-                             monthly_income=monthly_income,
-                             monthly_expenses=monthly_expenses)
+        try:
+            # Obtener estadísticas completas del servicio
+            stats = AccountService.get_account_statistics(account_id, current_user.id)
+            
+            return render_template('accounts/details.html',
+                                 account=stats['account'],
+                                 recent_transactions=stats['recent_transactions'],
+                                 monthly_income=stats['monthly_income'],
+                                 monthly_expenses=stats['monthly_expenses'])
+        except PermissionError:
+            flash('No tienes permisos para ver esta cuenta.', 'error')
+            return redirect(url_for('main.accounts'))
+        except Exception as e:
+            logger.exception(f'Error obteniendo detalles de cuenta {account_id}')
+            flash('Error al cargar los detalles de la cuenta.', 'error')
+            return redirect(url_for('main.accounts'))
     
     @staticmethod
     @login_required
     def get_account_balance(account_id):
         """API endpoint para obtener balance de cuenta"""
-        account = Account.query.filter_by(id=account_id, user_id=current_user.id).first()
-        
-        if account:
-            return jsonify({
-                'success': True,
-                'balance': account.balance,
-                'account_name': account.name
-            })
-        else:
+        try:
+            account = AccountService.get_account_by_id(account_id, current_user.id)
+            
+            if account:
+                return jsonify({
+                    'success': True,
+                    'balance': account.balance,
+                    'account_name': account.name
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'Cuenta no encontrada'
+                }), 404
+        except Exception as e:
+            logger.exception(f'Error obteniendo balance de cuenta {account_id}')
             return jsonify({
                 'success': False,
-                'message': 'Cuenta no encontrada'
-            }), 404
+                'message': 'Error al obtener balance'
+            }), 500

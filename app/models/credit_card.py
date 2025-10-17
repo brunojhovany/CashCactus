@@ -81,21 +81,37 @@ class CreditCard(db.Model):
     def update_balance(self):
         """Actualizar balance basado en las transacciones"""
         from app.models.transaction import Transaction
-
         transactions = Transaction.query.filter_by(credit_card_id=self.id).all()
-        calculated_balance = 0.0
+        if not transactions:
+            # Sin transacciones: mantener saldo actual (ya cifrado) pero asegurar mínimo coherente
+            try:
+                self.update_minimum_payment()
+            except Exception:
+                pass
+            return self.current_balance
 
+        calculated_balance = 0.0
         for transaction in transactions:
-            if transaction.transaction_type == 'expense':
-                # Gastos aumentan la deuda de la tarjeta
+            ttype = transaction.transaction_type
+            if ttype == 'expense':
                 calculated_balance += transaction.amount
-            elif transaction.transaction_type == 'income':
-                # Pagos reducen la deuda de la tarjeta
+            elif ttype == 'income':
                 calculated_balance -= transaction.amount
 
-        self.current_balance = max(0.0, calculated_balance)  # No permitir balance negativo
+        # Normalizar a no negativo
+        calculated_balance = max(0.0, round(calculated_balance, 2))
+
+        # Si el valor cifrado actual difiere, actualizarlo. También forzar si es 0 pero hay expenses.
+        try:
+            current_dec = round(self.current_balance, 2)
+        except Exception:
+            current_dec = -1  # Forzar escritura
+        has_expenses = any(t.transaction_type == 'expense' for t in transactions)
+        if calculated_balance != current_dec or (current_dec == 0 and has_expenses and calculated_balance > 0):
+            self.current_balance = calculated_balance
+        # Actualizar pago mínimo según nuevo saldo
         self.update_minimum_payment()
-        return self.current_balance
+        return calculated_balance
     
     def __repr__(self):
         return f'<CreditCard {self.name}>'

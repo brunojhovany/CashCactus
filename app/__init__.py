@@ -96,8 +96,8 @@ def create_app():
     instance_path = os.path.join(app.root_path, '..', 'instance')
     try:
         os.makedirs(os.path.abspath(instance_path), exist_ok=True)
-    except Exception:
-        pass
+    except OSError as e:
+        logging.getLogger(__name__).warning(f"No se pudo crear directorio instance: {e}")
 
     # Crear tablas
     with app.app_context():
@@ -105,6 +105,8 @@ def create_app():
         # Auto-migración mínima para nuevas columnas cifradas de transactions si faltan
         from sqlalchemy import inspect
         try:
+
+            
             inspector = inspect(db.engine)
             cols = {c['name'] for c in inspector.get_columns('transactions')}
             alter_stmts = []
@@ -128,8 +130,8 @@ def create_app():
                 for stmt in alter_stmts:
                     try:
                         conn.exec_driver_sql(stmt)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logging.getLogger(__name__).debug(f"Columna ya existe o error al agregar: {stmt[:50]}... - {e}")
                 # Relajar NOT NULL de columnas legacy (description, notes, creditor_name, amount) si existen en DB
                 try:
                     txn_columns = inspector.get_columns('transactions')
@@ -142,9 +144,9 @@ def create_app():
                                 conn.exec_driver_sql(f'ALTER TABLE transactions ALTER COLUMN {name} DROP NOT NULL')
                             elif dialect_name == 'sqlite':
                                 # SQLite no permite DROP NOT NULL fácilmente sin recrear tabla; se omite.
-                                pass
-                except Exception:
-                    pass
+                                logging.getLogger(__name__).debug(f"SQLite: no se puede relajar NOT NULL en {name}")
+                except Exception as e:
+                    logging.getLogger(__name__).warning(f"Error relajando NOT NULL en transactions: {e}")
                 # Auto-alter para cuentas: balance_enc y enc_version
                 try:
                     acct_cols = {c['name'] for c in inspector.get_columns('accounts')}
@@ -156,10 +158,10 @@ def create_app():
                     for stmt in acct_alters:
                         try:
                             conn.exec_driver_sql(stmt)
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+                        except Exception as e:
+                            logging.getLogger(__name__).debug(f"Error al alterar accounts: {stmt[:50]}... - {e}")
+                except Exception as e:
+                    logging.getLogger(__name__).warning(f"Error en auto-migración de accounts: {e}")
                 # Auto-alter para tarjetas: current_balance_enc y enc_version
                 try:
                     cc_cols = {c['name'] for c in inspector.get_columns('credit_cards')}
@@ -171,10 +173,10 @@ def create_app():
                     for stmt in cc_alters:
                         try:
                             conn.exec_driver_sql(stmt)
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+                        except Exception as e:
+                            logging.getLogger(__name__).debug(f"Error al alterar credit_cards: {stmt[:50]}... - {e}")
+                except Exception as e:
+                    logging.getLogger(__name__).warning(f"Error en auto-migración de credit_cards: {e}")
                 # Relajar NOT NULL en cuentas.balance y tarjetas.current_balance (Postgres)
                 try:
                     if db.engine.dialect.name == 'postgresql':
@@ -184,8 +186,8 @@ def create_app():
                         cc_cols_meta = {c['name']: c for c in inspector.get_columns('credit_cards')}
                         if 'current_balance' in cc_cols_meta and not cc_cols_meta['current_balance'].get('nullable', True):
                             conn.exec_driver_sql('ALTER TABLE credit_cards ALTER COLUMN current_balance DROP NOT NULL')
-                except Exception:
-                    pass
+                except Exception as e:
+                    logging.getLogger(__name__).debug(f"No se pudo relajar NOT NULL en PostgreSQL: {e}")
                 # Backfill de columnas cifradas numéricas si están vacías (opcional)
                 try:
                     if os.environ.get('AUTO_BACKFILL_ENCRYPTED', '1') == '1':
@@ -199,7 +201,8 @@ def create_app():
                         def _has_col(table: str, col: str) -> bool:
                             try:
                                 return col in {c['name'] for c in inspector.get_columns(table)}
-                            except Exception:
+                            except Exception as e:
+                                logging.getLogger(__name__).debug(f"Error verificando columna {col} en {table}: {e}")
                                 return False
 
                         # 1) Rellenar transactions.amount_enc desde transactions.amount (si existe)
@@ -219,12 +222,13 @@ def create_app():
                                             continue
                                         # setter cifrará y fijará enc_version si falta
                                         tx.amount = float(amt)
-                                    except Exception:
+                                    except Exception as e:
                                         # continuar con el siguiente
-                                        pass
+                                        logging.getLogger(__name__).debug(f"Error backfilling transaction {rid}: {e}")
                                 try:
                                     db.session.commit()
-                                except Exception:
+                                except Exception as e:
+                                    logging.getLogger(__name__).error(f"Error commit backfilling transactions: {e}")
                                     db.session.rollback()
                                     break
 
@@ -232,13 +236,13 @@ def create_app():
                         try:
                             if _has_col('accounts', 'enc_version') and _has_col('accounts', 'balance_enc'):
                                 conn.exec_driver_sql('UPDATE accounts SET enc_version = :v WHERE enc_version IS NULL AND balance_enc IS NOT NULL', {'v': active_ver})
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logging.getLogger(__name__).warning(f"Error actualizando enc_version en accounts: {e}")
                         try:
                             if _has_col('credit_cards', 'enc_version') and _has_col('credit_cards', 'current_balance_enc'):
                                 conn.exec_driver_sql('UPDATE credit_cards SET enc_version = :v WHERE enc_version IS NULL AND current_balance_enc IS NOT NULL', {'v': active_ver})
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logging.getLogger(__name__).warning(f"Error actualizando enc_version en credit_cards: {e}")
 
                         # 3) Rellenar accounts.balance_enc: si existe columna legacy 'balance', úsala; si no, recalcula
                         if _has_col('accounts', 'balance_enc'):
@@ -252,11 +256,12 @@ def create_app():
                                         if acct is None:
                                             continue
                                         acct.balance = float(bal)
-                                    except Exception:
-                                        pass
+                                    except Exception as e:
+                                        logging.getLogger(__name__).debug(f"Error backfilling account {rid}: {e}")
                                 try:
                                     db.session.commit()
-                                except Exception:
+                                except Exception as e:
+                                    logging.getLogger(__name__).error(f"Error commit backfilling accounts: {e}")
                                     db.session.rollback()
                             else:
                                 # Recalcular desde transacciones si no hay columna legacy
@@ -267,11 +272,12 @@ def create_app():
                                         continue
                                     try:
                                         acct.update_balance()
-                                    except Exception:
-                                        pass
+                                    except Exception as e:
+                                        logging.getLogger(__name__).debug(f"Error recalculando balance account {rid}: {e}")
                                 try:
                                     db.session.commit()
-                                except Exception:
+                                except Exception as e:
+                                    logging.getLogger(__name__).error(f"Error commit recalculando accounts: {e}")
                                     db.session.rollback()
 
                         # 4) Rellenar credit_cards.current_balance_enc: usar legacy si existe; si no, recalcular
@@ -287,11 +293,12 @@ def create_app():
                                             continue
                                         cc.current_balance = float(bal)
                                         cc.update_minimum_payment()
-                                    except Exception:
-                                        pass
+                                    except Exception as e:
+                                        logging.getLogger(__name__).debug(f"Error backfilling credit_card {rid}: {e}")
                                 try:
                                     db.session.commit()
-                                except Exception:
+                                except Exception as e:
+                                    logging.getLogger(__name__).error(f"Error commit backfilling credit_cards: {e}")
                                     db.session.rollback()
                             else:
                                 ids = [r[0] for r in conn.exec_driver_sql('SELECT id FROM credit_cards WHERE current_balance_enc IS NULL').fetchall()]
@@ -302,16 +309,17 @@ def create_app():
                                     try:
                                         cc.update_balance()
                                         cc.update_minimum_payment()
-                                    except Exception:
-                                        pass
+                                    except Exception as e:
+                                        logging.getLogger(__name__).debug(f"Error recalculando credit_card {rid}: {e}")
                                 try:
                                     db.session.commit()
-                                except Exception:
+                                except Exception as e:
+                                    logging.getLogger(__name__).error(f"Error commit recalculando credit_cards: {e}")
                                     db.session.rollback()
-                except Exception:
-                    pass
-        except Exception:
-            pass
+                except Exception as e:
+                    logging.getLogger(__name__).error(f"Error en backfill automático de campos cifrados: {e}")
+        except Exception as e:
+            logging.getLogger(__name__).error(f"Error en auto-migración de esquema: {e}", exc_info=True)
     
     # Inicializar scheduler para recordatorios
     from app.services.scheduler import init_scheduler
