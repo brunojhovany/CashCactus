@@ -19,8 +19,8 @@ class CreditCardController:
         credit_cards = CreditCard.query.filter_by(user_id=current_user.id, is_active=True).all()
         
         # Calcular totales
-        total_debt = sum(card.current_balance for card in credit_cards)
-        total_credit_limit = sum(card.credit_limit for card in credit_cards)
+        total_debt = float(sum(card.current_balance for card in credit_cards))
+        total_credit_limit = float(sum(card.credit_limit for card in credit_cards))
         total_available_credit = total_credit_limit - total_debt
         
         # Próximos vencimientos
@@ -54,7 +54,21 @@ class CreditCardController:
                 current_balance = float(request.form.get('current_balance', 0))
                 due_date = int(request.form.get('due_date'))
                 closing_date = int(request.form.get('closing_date'))
-                interest_rate = float(request.form.get('interest_rate', 0))
+                
+                # Manejar interest_rate como opcional
+                interest_rate_value = request.form.get('interest_rate', '').strip()
+                if interest_rate_value == '' or interest_rate_value is None:
+                    interest_rate = 0.0
+                else:
+                    try:
+                        interest_rate = float(interest_rate_value)
+                        if not (0 <= interest_rate <= 100):
+                            flash('La tasa de interés debe estar entre 0 y 100.', 'error')
+                            return render_template('credit_cards/create.html')
+                    except ValueError:
+                        flash('La tasa de interés debe ser un número válido.', 'error')
+                        return render_template('credit_cards/create.html')
+                
                 is_active = bool(request.form.get('is_active'))
                 
                 # Validaciones
@@ -121,7 +135,22 @@ class CreditCardController:
                 credit_card.current_balance = float(request.form.get('current_balance'))
                 credit_card.due_date = int(request.form.get('due_date'))
                 credit_card.closing_date = int(request.form.get('closing_date'))
-                credit_card.interest_rate = float(request.form.get('interest_rate', 0))
+                
+                # Manejar interest_rate como opcional
+                interest_rate_value = request.form.get('interest_rate', '').strip()
+                if interest_rate_value == '' or interest_rate_value is None:
+                    credit_card.interest_rate = 0.0
+                else:
+                    try:
+                        interest_rate = float(interest_rate_value)
+                        if not (0 <= interest_rate <= 100):
+                            flash('La tasa de interés debe estar entre 0 y 100.', 'error')
+                            return render_template('credit_cards/edit.html', credit_card=credit_card)
+                        credit_card.interest_rate = interest_rate
+                    except ValueError:
+                        flash('La tasa de interés debe ser un número válido.', 'error')
+                        return render_template('credit_cards/edit.html', credit_card=credit_card)
+                
                 credit_card.is_active = bool(request.form.get('is_active'))
                 
                 # Validaciones
@@ -184,8 +213,8 @@ class CreditCardController:
             Transaction.date >= month_start
         ).all()
         
-        monthly_purchases = sum(t.amount for t in monthly_transactions if t.transaction_type == 'expense')
-        monthly_payments = sum(t.amount for t in monthly_transactions if t.transaction_type == 'income')
+        monthly_purchases = float(sum(t.amount for t in monthly_transactions if t.transaction_type == 'expense'))
+        monthly_payments = float(sum(t.amount for t in monthly_transactions if t.transaction_type == 'income'))
         
         return render_template('credit_cards/details.html',
                              credit_card=credit_card,

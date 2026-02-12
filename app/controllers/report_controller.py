@@ -174,11 +174,11 @@ class ReportController:
                 'card': card,
                 'utilization': utilization,
                 'status': status,
-                'interest_per_month': card.current_balance * (card.interest_rate / 100) if card.interest_rate > 0 else 0
+                'interest_per_month': float(card.current_balance) * (card.interest_rate / 100) if card.interest_rate > 0 else 0.0
             })
         
         # Proyección de pagos
-        total_monthly_interest = sum(analysis['interest_per_month'] for analysis in card_analysis)
+        total_monthly_interest = float(sum(analysis['interest_per_month'] for analysis in card_analysis))
         
         # Recomendaciones
         recommendations = []

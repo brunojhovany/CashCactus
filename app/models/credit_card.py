@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from app import db
-from app.utils.crypto_fields import encrypt_field, decrypt_field, get_active_enc_version
 
 class CreditCard(db.Model):
     __tablename__ = 'credit_cards'
@@ -12,8 +11,7 @@ class CreditCard(db.Model):
     bank_name = db.Column(db.String(100))
     last_four_digits = db.Column(db.String(4))
     credit_limit = db.Column(db.Float, nullable=False)
-    current_balance_enc = db.Column(db.LargeBinary, nullable=False)
-    enc_version = db.Column(db.SmallInteger, default=get_active_enc_version)
+    current_balance = db.Column(db.Numeric(precision=15, scale=2), nullable=False, default=0.0)
     minimum_payment = db.Column(db.Float, default=0.0)
     due_date = db.Column(db.Integer)  # Día del mes (1-31)
     closing_date = db.Column(db.Integer)  # Día del mes (1-31)
@@ -26,13 +24,13 @@ class CreditCard(db.Model):
     
     def get_available_credit(self):
         """Obtener crédito disponible"""
-        return self.credit_limit - self.current_balance
+        return self.credit_limit - float(self.current_balance)
     
     def get_utilization_percentage(self):
         """Obtener porcentaje de utilización"""
         if self.credit_limit == 0:
             return 0
-        return (self.current_balance / self.credit_limit) * 100
+        return (float(self.current_balance) / float(self.credit_limit)) * 100
     
     def get_next_due_date(self):
         """Obtener próxima fecha de vencimiento"""
@@ -72,7 +70,7 @@ class CreditCard(db.Model):
     
     def calculate_minimum_payment(self):
         """Calcular pago mínimo (generalmente 5% del saldo)"""
-        return max(self.current_balance * 0.05, 50.0) if self.current_balance > 0 else 0.0
+        return max(float(self.current_balance) * 0.05, 50.0) if self.current_balance > 0 else 0.0
     
     def update_minimum_payment(self):
         """Actualizar el pago mínimo"""
@@ -94,9 +92,9 @@ class CreditCard(db.Model):
         for transaction in transactions:
             ttype = transaction.transaction_type
             if ttype == 'expense':
-                calculated_balance += transaction.amount
+                calculated_balance += float(transaction.amount)
             elif ttype == 'income':
-                calculated_balance -= transaction.amount
+                calculated_balance -= float(transaction.amount)
 
         # Normalizar a no negativo
         calculated_balance = max(0.0, round(calculated_balance, 2))
@@ -116,19 +114,3 @@ class CreditCard(db.Model):
     def __repr__(self):
         return f'<CreditCard {self.name}>'
 
-    # ---- Accesores cifrados ----
-    @property
-    def current_balance(self) -> float:
-        txt = decrypt_field(self.current_balance_enc, 'cc_current_balance', self.enc_version)
-        if txt is None:
-            return 0.0
-        return float(Decimal(txt))
-
-    @current_balance.setter
-    def current_balance(self, value: float | int | str):
-        if value is None:
-            raise ValueError('current_balance no puede ser None')
-        if not self.enc_version:
-            self.enc_version = get_active_enc_version()
-        dec = Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.current_balance_enc = encrypt_field(str(dec), 'cc_current_balance', self.enc_version)

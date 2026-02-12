@@ -13,10 +13,15 @@ class Config:
     """
 
     # Security
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'change-me')  # MUST override via env in production
-    if SECRET_KEY == 'change-me' and os.environ.get('ALLOW_DEFAULT_SECRET') != '1':
-        # Fail fast to avoid predictable session signing allowing impersonation
-        raise RuntimeError('Insecure SECRET_KEY in use. Set SECRET_KEY env var (export SECRET_KEY="super-random-value").')
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        raise RuntimeError(
+            'SECRET_KEY must be set in environment variables.\n'
+            'Generate a secure key with: python -c "import secrets; print(secrets.token_hex(32))"\n'
+            'Then set: export SECRET_KEY="<generated_key>"'
+        )
+    if len(SECRET_KEY) < 32:
+        raise RuntimeError('SECRET_KEY must be at least 32 characters long for security.')
 
     # Database (default to SQLite in the instance folder)
     # Examples:
@@ -67,16 +72,31 @@ class Config:
     # Reminders
     REMINDER_ADVANCE_DAYS = int(os.environ.get('REMINDER_ADVANCE_DAYS', '3'))  # days before due
 
-    # Session
-    PERMANENT_SESSION_LIFETIME = timedelta(hours=int(os.environ.get('SESSION_HOURS', '24')))
+    # Session (más seguro: reducir tiempos)
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=int(os.environ.get('SESSION_HOURS', '2')))  # Reducido a 2 horas
+    SESSION_INACTIVITY_TIMEOUT = timedelta(minutes=int(os.environ.get('SESSION_INACTIVITY_MINUTES', '30')))  # 30 min inactividad
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
-    SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', '0') == '1'
+    SESSION_COOKIE_SAMESITE = 'Strict'  # Cambio de Lax a Strict para mayor seguridad
+    SESSION_COOKIE_SECURE = True  # Siempre True (Cloudflare maneja HTTPS)
     REMEMBER_COOKIE_HTTPONLY = True
-    REMEMBER_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
-    REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
+    REMEMBER_COOKIE_SAMESITE = 'Strict'
+    REMEMBER_COOKIE_SECURE = True
     # Force refresh interval for remember cookie (mitigate stolen cookie reuse)
     REMEMBER_COOKIE_DURATION = timedelta(days=int(os.environ.get('REMEMBER_DAYS', '7')))
-
-    # Ajustes de sesión detrás de proxy: permitir que Flask-Login funcione con ProxyFix
-    SESSION_COOKIE_SECURE = SESSION_COOKIE_SECURE or os.environ.get('FORCE_COOKIE_SECURE', '0') == '1'
+    
+    # CSRF Protection
+    WTF_CSRF_ENABLED = True
+    WTF_CSRF_TIME_LIMIT = None  # No expiración de tokens
+    WTF_CSRF_SSL_STRICT = True
+    
+    # Rate Limiting
+    RATELIMIT_ENABLED = os.environ.get('RATELIMIT_ENABLED', '1') == '1'
+    RATELIMIT_STORAGE_URL = os.environ.get('RATELIMIT_STORAGE_URL', 'memory://')
+    RATELIMIT_STRATEGY = 'fixed-window'
+    RATELIMIT_HEADERS_ENABLED = True
+    
+    # OAuth Security
+    OAUTH_REDIRECT_URIS = {
+        'google': os.environ.get('GOOGLE_REDIRECT_URI', 'https://localhost/auth/google/callback')
+    }
+    ALLOWED_HOSTS = [h.strip() for h in os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()]

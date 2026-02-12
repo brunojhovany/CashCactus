@@ -42,6 +42,10 @@ def logout():
 def profile():
     return AuthController.profile()
 
+@auth_bp.route('/delete-all-data', methods=['GET', 'POST'])
+def delete_all_data():
+    return AuthController.delete_all_data()
+
 # Rutas principales
 @main_bp.route('/')
 def index():

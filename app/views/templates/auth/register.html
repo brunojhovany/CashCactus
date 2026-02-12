@@ -12,6 +12,7 @@
             <div class="pm-card-body">
                 <h5 class="text-center mb-4">Registro de Usuario</h5>
                 <form method="POST">
+                    {{ csrf_token() }}
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">

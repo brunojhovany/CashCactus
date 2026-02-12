@@ -35,11 +35,11 @@ class ReportService:
         # Transaction cuando están asociados a una tarjeta (credit_card_id != None),
         # ya que reducen la deuda de la tarjeta. Sin embargo, eso no debe contarse
         # como ingreso real en los reportes (dashboard). Por eso se excluyen.
-        total_income = sum(
+        total_income = float(sum(
             t.amount for t in transactions
             if t.transaction_type == 'income' and t.credit_card_id is None
-        )
-        total_expenses = sum(t.amount for t in transactions if t.transaction_type == 'expense')
+        ))
+        total_expenses = float(sum(t.amount for t in transactions if t.transaction_type == 'expense'))
         net_income = total_income - total_expenses
         
         # Gastos por categoría
@@ -47,7 +47,7 @@ class ReportService:
         for transaction in transactions:
             if transaction.transaction_type == 'expense':
                 category = transaction.get_category_display()
-                expenses_by_category[category] = expenses_by_category.get(category, 0) + transaction.amount
+                expenses_by_category[category] = expenses_by_category.get(category, 0.0) + float(transaction.amount)
         
         return {
             'total_income': total_income,
@@ -116,12 +116,12 @@ class ReportService:
         ).all()
         
         # Calcular totales de tarjetas de crédito
-        credit_card_debt = sum(card.current_balance for card in credit_cards)
-        total_credit_limit = sum(card.credit_limit for card in credit_cards)
+        credit_card_debt = float(sum(card.current_balance for card in credit_cards))
+        total_credit_limit = float(sum(card.credit_limit for card in credit_cards))
         total_available_credit = total_credit_limit - credit_card_debt
         
         # Calcular totales de cuentas de deuda (balance positivo = deuda pendiente)
-        account_debt = sum(account.balance for account in debt_accounts if account.balance > 0)
+        account_debt = float(sum(account.balance for account in debt_accounts if account.balance > 0))
         
         # Total general de deudas
         total_debt = credit_card_debt + account_debt
@@ -133,14 +133,14 @@ class ReportService:
             utilization_percentage = 0
         
         # Pagos mínimos totales
-        credit_card_minimum = sum(card.minimum_payment for card in credit_cards)
-        debt_account_minimum = sum(account.minimum_payment for account in debt_accounts)
+        credit_card_minimum = float(sum(card.minimum_payment for card in credit_cards))
+        debt_account_minimum = float(sum(account.minimum_payment for account in debt_accounts))
         total_minimum_payment = credit_card_minimum + debt_account_minimum
         
         # Intereses mensuales estimados
-        monthly_interest = 0
+        monthly_interest = 0.0
         for account in debt_accounts:
-            monthly_interest += account.calculate_monthly_interest()
+            monthly_interest += float(account.calculate_monthly_interest())
         
         # Próximos vencimientos
         upcoming_payments = []
@@ -221,11 +221,11 @@ class ReportService:
             is_active=True, 
             is_debt_account=False
         ).all()
-        total_assets = sum(account.balance for account in normal_accounts)
+        total_assets = float(sum(account.balance for account in normal_accounts))
         
         # Pasivos de tarjetas de crédito
         credit_cards = CreditCard.query.filter_by(user_id=user_id, is_active=True).all()
-        credit_card_debt = sum(card.current_balance for card in credit_cards)
+        credit_card_debt = float(sum(card.current_balance for card in credit_cards))
         
         # Pasivos de cuentas de deuda (balances positivos = deuda pendiente)
         debt_accounts = Account.query.filter_by(
@@ -233,7 +233,7 @@ class ReportService:
             is_active=True, 
             is_debt_account=True
         ).all()
-        account_debt = sum(account.balance for account in debt_accounts if account.balance > 0)
+        account_debt = float(sum(account.balance for account in debt_accounts if account.balance > 0))
         
         # Total de pasivos
         total_liabilities = credit_card_debt + account_debt
@@ -469,13 +469,13 @@ class ReportService:
         # Agregar cuentas normales (activos)
         for acc in normal_accounts:
             account_names.append(acc.name)
-            balances.append(acc.balance)
+            balances.append(float(acc.balance))
             colors.append('#28a745')  # Verde para activos
         
         # Agregar cuentas de deuda (pasivos, mostrar como negativos)
         for acc in debt_accounts:
             account_names.append(f"{acc.name} (Deuda)")
-            balances.append(-abs(acc.balance))  # Mostrar como negativo
+            balances.append(-float(abs(acc.balance)))  # Mostrar como negativo
             colors.append('#dc3545')  # Rojo para deudas
         
         plt.figure(figsize=(12, 8))
@@ -546,7 +546,7 @@ class ReportService:
                 Transaction.date < end_date
             ).all()
             
-            account_income = sum(t.amount for t in income_transactions)
+            account_income = float(sum(t.amount for t in income_transactions))
             
             if account_income > 0:
                 income_by_account[account.name] = {
@@ -555,7 +555,7 @@ class ReportService:
                     'total_income': account_income,
                     'transaction_count': len(income_transactions),
                     'transactions': income_transactions,
-                    'current_balance': account.balance
+                    'current_balance': float(account.balance)
                 }
                 total_income += account_income
         

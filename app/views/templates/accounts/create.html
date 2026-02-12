@@ -24,6 +24,7 @@
             </div>
             <div class="card-body">
                 <form method="POST">
+                    {{ csrf_token() }}
                     <div class="mb-3">
                         <label for="name" class="form-label">Nombre de la Cuenta *</label>
                         <input type="text" class="form-control" id="name" name="name" required
@@ -37,7 +38,11 @@
                             <option value="checking">Cuenta Corriente</option>
                             <option value="savings">Cuenta de Ahorros</option>
                             <option value="investment">Inversión</option>
+                            <option value="debt">Deuda</option>
                         </select>
+                        <div class="form-text">
+                            Usa "Deuda" para registrar préstamos personales, préstamos estudiantiles, hipotecas, etc.
+                        </div>
                     </div>
                     
                     <div class="mb-3">

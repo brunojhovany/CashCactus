@@ -1,12 +1,16 @@
 from flask import render_template, request, redirect, url_for, flash, session, current_app
 import os
+import secrets
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse, urljoin
 from app.models.user import User
-from app import db
+from app import db, limiter
+from app.utils.validators import validate_password_strength
 
 class AuthController:
     @staticmethod
+    @limiter.limit("5 per minute")  # Máximo 5 intentos por minuto
+    @limiter.limit("20 per hour")   # Máximo 20 intentos por hora
     def login():
         """Manejar inicio de sesión"""
         if request.method == 'POST':
@@ -48,6 +52,7 @@ class AuthController:
 
     # ---------------- GOOGLE OAUTH ----------------
     @staticmethod
+    @limiter.limit("10 per minute")
     def login_google_start():
         """Redirigir a Google para autenticación"""
         from authlib.integrations.flask_client import OAuth
@@ -57,17 +62,40 @@ class AuthController:
             flash('Autenticación con Google no configurada.', 'error')
             return redirect(url_for('auth.login'))
         AuthController._ensure_google_client(oauth)
-        redirect_uri = url_for('auth.login_google_callback', _external=True)
-        if current_app.config.get('PREFERRED_URL_SCHEME', 'http') == 'https':
-            redirect_uri = redirect_uri.replace('http://', 'https://', 1)
-        return oauth.google.authorize_redirect(redirect_uri)
+        
+        # Usar redirect_uri configurado y validado
+        redirect_uri = current_app.config['OAUTH_REDIRECT_URIS'].get('google')
+        if not redirect_uri:
+            flash('OAuth no configurado correctamente.', 'error')
+            return redirect(url_for('auth.login'))
+        
+        # Validar que el redirect_uri esté en whitelist
+        parsed = urlparse(redirect_uri)
+        if parsed.netloc not in current_app.config.get('ALLOWED_HOSTS', []):
+            flash('Configuración de OAuth inválida.', 'error')
+            return redirect(url_for('auth.login'))
+        
+        # Generar state para prevenir CSRF en OAuth
+        state = secrets.token_urlsafe(32)
+        session['oauth_state'] = state
+        
+        return oauth.google.authorize_redirect(redirect_uri, state=state)
 
     @staticmethod
+    @limiter.limit("10 per minute")
     def login_google_callback():
         from authlib.integrations.flask_client import OAuth
         from app import db
         oauth = OAuth(current_app)
         AuthController._ensure_google_client(oauth)
+        
+        # Validar state para prevenir CSRF
+        state = request.args.get('state')
+        expected_state = session.pop('oauth_state', None)
+        if not state or not expected_state or state != expected_state:
+            flash('Error de seguridad OAuth (state mismatch). Intenta nuevamente.', 'error')
+            return redirect(url_for('auth.login'))
+        
         token = oauth.google.authorize_access_token()
         userinfo = token.get('userinfo') or oauth.google.parse_id_token(token)
         if not userinfo:
@@ -152,6 +180,7 @@ class AuthController:
         )
 
     @staticmethod
+    @limiter.limit("3 per minute")  # Más restrictivo para registro
     def register():
         """Manejar registro de usuario"""
         if request.method == 'POST':
@@ -166,17 +195,29 @@ class AuthController:
             if not all([username, email, password, first_name, last_name]):
                 flash('Por favor, completa todos los campos obligatorios.', 'error')
                 return render_template('auth/register.html')
+            
             if password != confirm_password:
                 flash('Las contraseñas no coinciden.', 'error')
                 return render_template('auth/register.html')
-            if len(password) < 6:
-                flash('La contraseña debe tener al menos 6 caracteres.', 'error')
+            
+            # Validación de contraseña fuerte
+            is_valid, error_message = validate_password_strength(password)
+            if not is_valid:
+                flash(error_message, 'error')
                 return render_template('auth/register.html')
-            if User.query.filter_by(username=username).first():
-                flash('El nombre de usuario ya está en uso.', 'error')
-                return render_template('auth/register.html')
-            if User.query.filter_by(email=email).first():
-                flash('El email ya está registrado.', 'error')
+            
+            # Anti-enumeración: verificar ambos sin revelar cuál está duplicado
+            user_exists = User.query.filter(
+                (User.username == username) | (User.email == email)
+            ).first()
+            
+            if user_exists:
+                # Mensaje genérico sin revelar qué campo está en uso
+                flash(
+                    'No se pudo completar el registro. '
+                    'Verifica que el nombre de usuario y correo no estén en uso.',
+                    'error'
+                )
                 return render_template('auth/register.html')
             try:
                 user = User(
@@ -223,9 +264,13 @@ class AuthController:
                     if not current_user.check_password(current_password):
                         flash('Contraseña actual incorrecta.', 'error')
                         return render_template('auth/profile.html', user=current_user)
-                    if len(new_password) < 6:
-                        flash('La nueva contraseña debe tener al menos 6 caracteres.', 'error')
+                    
+                    # Validar fortaleza de nueva contraseña
+                    is_valid, error_message = validate_password_strength(new_password)
+                    if not is_valid:
+                        flash(error_message, 'error')
                         return render_template('auth/profile.html', user=current_user)
+                    
                     current_user.set_password(new_password)
                 db.session.commit()
                 flash('Perfil actualizado exitosamente.', 'success')
@@ -233,3 +278,51 @@ class AuthController:
                 db.session.rollback()
                 flash('Error al actualizar el perfil.', 'error')
         return render_template('auth/profile.html', user=current_user)
+
+    @staticmethod
+    @login_required
+    def delete_all_data():
+        """Eliminar todos los datos del usuario (mantiene la cuenta pero limpia todos los registros)"""
+        if request.method == 'POST':
+            try:
+                # Verificar contraseña para confirmar
+                password = request.form.get('confirm_password')
+                if not current_user.check_password(password):
+                    flash('Contraseña incorrecta. No se eliminaron los datos.', 'error')
+                    return redirect(url_for('auth.profile'))
+                
+                # Importar modelos necesarios
+                from app.models.transaction import Transaction
+                from app.models.account import Account
+                from app.models.credit_card import CreditCard
+                from app.models.reminder import Reminder
+                
+                user_id = current_user.id
+                
+                # Eliminar todas las transacciones
+                Transaction.query.filter_by(user_id=user_id).delete()
+                
+                # Eliminar todos los recordatorios
+                Reminder.query.filter_by(user_id=user_id).delete()
+                
+                # Eliminar todas las tarjetas de crédito
+                CreditCard.query.filter_by(user_id=user_id).delete()
+                
+                # Eliminar todas las cuentas
+                Account.query.filter_by(user_id=user_id).delete()
+                
+                # Resetear algunos campos del usuario
+                current_user.monthly_income = 0.0
+                
+                db.session.commit()
+                
+                flash('Todos tus datos han sido eliminados exitosamente. Tu cuenta sigue activa pero sin registros.', 'success')
+                return redirect(url_for('main.dashboard'))
+                
+            except Exception as e:
+                db.session.rollback()
+                flash('Error al eliminar los datos. Por favor intenta nuevamente.', 'error')
+                return redirect(url_for('auth.profile'))
+        
+        return render_template('auth/delete_data.html')
+

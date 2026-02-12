@@ -22,7 +22,7 @@ class DebtController:
         for account in debt_accounts:
             info = {
                 'account': account,
-                'current_debt': abs(account.balance),  # Para deudas, el balance representa lo que se debe
+                'current_debt': float(abs(account.balance)),  # Para deudas, el balance representa lo que se debe
                 'monthly_interest': account.calculate_monthly_interest(),
                 'next_payment_due': account.get_next_payment_due_date(),
                 'is_overdue': account.is_payment_overdue()
@@ -109,11 +109,11 @@ class DebtController:
         
         # Información adicional
         debt_info = {
-            'current_debt': abs(debt_account.balance),  # Para deudas, el balance siempre representa lo que se debe
+            'current_debt': float(abs(debt_account.balance)),  # Para deudas, el balance siempre representa lo que se debe
             'monthly_interest': debt_account.calculate_monthly_interest(),
             'next_payment_due': debt_account.get_next_payment_due_date(),
             'is_overdue': debt_account.is_payment_overdue(),
-            'total_paid': (debt_account.original_debt_amount or 0) - abs(debt_account.balance)  # Lo que se ha pagado
+            'total_paid': (debt_account.original_debt_amount or 0) - float(abs(debt_account.balance))  # Lo que se ha pagado
         }
         
         return render_template('debts/detail.html',
@@ -149,7 +149,7 @@ class DebtController:
                     return redirect(url_for('main.debt_detail', debt_id=debt_id))
                 
                 # Verificar que no se pague más de lo debido
-                current_debt = abs(debt_account.balance)  # Para deudas, el balance representa lo que se debe
+                current_debt = float(abs(debt_account.balance))  # Para deudas, el balance representa lo que se debe
                 if amount > current_debt:
                     flash('No puedes pagar más de lo que debes.', 'error')
                     return redirect(url_for('main.debt_detail', debt_id=debt_id))
@@ -236,14 +236,14 @@ class DebtController:
         ).all()
         
         applied_count = 0
-        total_interest = 0
+        total_interest = 0.0
         
         try:
             for debt_account in debt_accounts:
                 interest_transaction = debt_account.apply_monthly_interest()
                 if interest_transaction:
                     applied_count += 1
-                    total_interest += interest_transaction.amount
+                    total_interest += float(interest_transaction.amount)
             
             db.session.commit()
             

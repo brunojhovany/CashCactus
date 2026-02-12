@@ -303,7 +303,7 @@ class TransactionService:
             # Guardar información anterior para recalcular balances
             old_account_id = transaction.account_id
             old_credit_card_id = transaction.credit_card_id
-            old_amount = transaction.amount
+            old_amount = float(transaction.amount)
             old_type = transaction.transaction_type
             
             # Verificar propiedad de nuevos recursos

@@ -54,8 +54,7 @@
                 </h5>
             </div>
             <div class="card-body">
-                <form method="POST">
-                    <div class="mb-3">
+                <form method="POST">                    {{ csrf_token() }}                    <div class="mb-3">
                         <label for="amount" class="form-label">Monto a Pagar *</label>
                         <div class="input-group">
                             <span class="input-group-text">$</span>
@@ -77,10 +76,10 @@
                                     onclick="setAmount({{ credit_card.minimum_payment }})">
                                 Mínimo: ${{ "%.2f"|format(credit_card.minimum_payment) }}
                             </button>
-                            {% if credit_card.current_balance * 0.5 > credit_card.minimum_payment %}
+                            {% if credit_card.current_balance|float * 0.5 > credit_card.minimum_payment %}
                             <button type="button" class="btn btn-outline-info btn-sm" 
-                                    onclick="setAmount({{ credit_card.current_balance * 0.5 }})">
-                                50%: ${{ "%.2f"|format(credit_card.current_balance * 0.5) }}
+                                    onclick="setAmount({{ credit_card.current_balance|float * 0.5 }})">
+                                50%: ${{ "%.2f"|format(credit_card.current_balance|float * 0.5) }}
                             </button>
                             {% endif %}
                             <button type="button" class="btn btn-outline-primary btn-sm" 
@@ -152,7 +151,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const amountInput = document.getElementById('amount');
     const newBalanceSpan = document.getElementById('new-balance');
-    const currentBalance = {{ credit_card.current_balance }};
+    const currentBalance = {{ credit_card.current_balance|float }};
     
     function updateNewBalance() {
         const paymentAmount = parseFloat(amountInput.value) || 0;

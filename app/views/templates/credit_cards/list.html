@@ -74,8 +74,7 @@
                             <i class="fas fa-edit me-1"></i>Editar
                         </a>
                         <form method="POST" action="{{ url_for('main.delete_credit_card', card_id=card.id) }}" style="display:inline;"
-                              onsubmit="return confirm('¿Estás seguro de eliminar esta tarjeta?');">
-                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                              onsubmit="return confirm('¿Estás seguro de eliminar esta tarjeta?');">                            {{ csrf_token() }}                            <button type="submit" class="btn btn-outline-danger btn-sm">
                                 <i class="fas fa-trash me-1"></i>Eliminar
                             </button>
                         </form>

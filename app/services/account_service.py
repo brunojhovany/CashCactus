@@ -144,7 +144,8 @@ class AccountService:
                 account_type=dto.account_type,
                 balance=dto.initial_balance,
                 bank_name=dto.bank_name,
-                is_active=dto.is_active
+                is_active=dto.is_active,
+                is_debt_account=(dto.account_type == 'debt')
             )
             
             # Configurar campos específicos de inversión/ahorro
@@ -259,7 +260,7 @@ class AccountService:
             logger.debug(f"Actualizando cuenta {account_id} para user {user_id}")
             
             # Guardar balance anterior para calcular diferencia
-            old_balance = account.balance
+            old_balance = float(account.balance)
             
             # Actualizar campos básicos
             account.name = dto.name
@@ -267,6 +268,7 @@ class AccountService:
             account.bank_name = dto.bank_name
             account.balance = dto.initial_balance
             account.is_active = dto.is_active
+            account.is_debt_account = (dto.account_type == 'debt')
             
             # Actualizar o limpiar campos de inversión
             if dto.account_type in ['savings', 'investment']:
@@ -413,7 +415,7 @@ class AccountService:
             float: Balance total
         """
         accounts = AccountService.get_user_accounts(user_id, include_inactive=False)
-        total = sum(account.balance for account in accounts)
+        total = float(sum(account.balance for account in accounts))
         
         logger.debug(f"Balance total calculado para user {user_id}: {total}")
         
@@ -454,8 +456,8 @@ class AccountService:
             Transaction.date >= month_start
         ).all()
         
-        monthly_income = sum(t.amount for t in monthly_transactions if t.transaction_type == 'income')
-        monthly_expenses = sum(t.amount for t in monthly_transactions if t.transaction_type == 'expense')
+        monthly_income = float(sum(t.amount for t in monthly_transactions if t.transaction_type == 'income'))
+        monthly_expenses = float(sum(t.amount for t in monthly_transactions if t.transaction_type == 'expense'))
         
         logger.debug(f"Estadísticas calculadas para cuenta {account_id}: income={monthly_income}, expenses={monthly_expenses}")
         

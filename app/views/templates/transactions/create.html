@@ -24,6 +24,7 @@
             </div>
             <div class="card-body">
                 <form method="POST">
+                    {{ csrf_token() }}
                     <div class="mb-3">
                         <label for="transaction_type" class="form-label">Tipo de Transacción *</label>
                         <select class="form-select" id="transaction_type" name="transaction_type" required>

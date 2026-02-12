@@ -1,11 +1,38 @@
 # -*- coding: utf-8 -*-
-from flask import Flask, request, abort
+from flask import Flask, request, abort, session, redirect, url_for, render_template
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from config import Config
 import os
 from sqlalchemy import inspect, text  # noqa: F401 (podrían usarse en futuras inicializaciones condicionales)
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from datetime import datetime, timedelta
+import logging
+import re
+
+# Filtro de sanitización de logs
+class SensitiveDataFilter(logging.Filter):
+    """Filtro para remover datos sensibles de logs"""
+    SENSITIVE_PATTERNS = [
+        (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '[EMAIL_REDACTED]'),
+        (r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b', '[CARD_REDACTED]'),
+        (r'\$\d+[\d,]*\.\d{2}', '[AMOUNT_REDACTED]'),
+        (r"password['\"]?\s*[:=]\s*['\"]?[\w\d]+", "password=[REDACTED]"),
+        (r"token['\"]?\s*[:=]\s*['\"]?[\w\d]+", "token=[REDACTED]"),
+    ]
+    
+    def filter(self, record):
+        if hasattr(record, 'msg') and isinstance(record.msg, str):
+            for pattern, replacement in self.SENSITIVE_PATTERNS:
+                record.msg = re.sub(pattern, replacement, record.msg, flags=re.IGNORECASE)
+        return True
+
+# Configurar logging con filtro
+for handler in logging.getLogger().handlers:
+    handler.addFilter(SensitiveDataFilter())
 
 # Avoid attribute expiration after commit so test fixtures can access model fields
 # without needing an active session context (helps in unit tests where objects
@@ -13,6 +40,12 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 # simplifies tests.
 db = SQLAlchemy(session_options={'expire_on_commit': False})
 login_manager = LoginManager()
+csrf = CSRFProtect()
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",  # Usar Redis en producción
+)
 
 def create_app():
     app = Flask(__name__, template_folder='views/templates')
@@ -47,6 +80,12 @@ def create_app():
     
     # Inicializar extensiones
     db.init_app(app)
+    csrf.init_app(app)
+    
+    # Configurar rate limiter
+    if app.config.get('RATELIMIT_ENABLED', True):
+        limiter.init_app(app)
+    
     login_manager.init_app(app)
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Por favor, inicia sesión para acceder a esta página.'
@@ -75,6 +114,58 @@ def create_app():
                 email = request.form.get('email') or request.form.get('username')
                 if email and not AuthController._is_beta_email_allowed(email):
                     abort(403)
+    
+    # Timeout de inactividad de sesión
+    @app.before_request
+    def check_session_timeout():
+        """Cerrar sesión si excede el tiempo de inactividad"""
+        if current_user.is_authenticated:
+            session.permanent = True
+            last_activity = session.get('last_activity')
+            if last_activity:
+                try:
+                    last_activity = datetime.fromisoformat(last_activity)
+                    inactive_time = datetime.utcnow() - last_activity
+                    timeout = app.config.get('SESSION_INACTIVITY_TIMEOUT', timedelta(minutes=30))
+                    if inactive_time > timeout:
+                        session.clear()
+                        from flask_login import logout_user
+                        logout_user()
+                        from flask import flash
+                        flash('Sesión cerrada por inactividad.', 'info')
+                        return redirect(url_for('auth.login'))
+                except (ValueError, TypeError):
+                    pass
+            session['last_activity'] = datetime.utcnow().isoformat()
+    
+    # Manejo genérico de errores (sin exponer detalles en producción)
+    @app.errorhandler(404)
+    def not_found_error(error):
+        return render_template('errors/404.html'), 404
+    
+    @app.errorhandler(403)
+    def forbidden_error(error):
+        return render_template('errors/403.html'), 403
+    
+    @app.errorhandler(500)
+    def internal_error(error):
+        db.session.rollback()
+        if app.config.get('ENV') == 'production':
+            # Log completo en servidor, mensaje genérico al usuario
+            logging.getLogger(__name__).exception('Internal server error')
+            return render_template('errors/500.html'), 500
+        else:
+            # En desarrollo mostrar el error real
+            raise error
+    
+    @app.errorhandler(Exception)
+    def handle_unexpected_error(error):
+        db.session.rollback()
+        if app.config.get('ENV') == 'production':
+            logging.getLogger(__name__).exception('Unhandled exception')
+            return render_template('errors/500.html'), 500
+        else:
+            raise error
     
     # Filtros personalizados para plantillas
     @app.template_filter('month_name')

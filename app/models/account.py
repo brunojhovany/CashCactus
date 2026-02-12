@@ -2,7 +2,6 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from decimal import Decimal, ROUND_HALF_UP
 from app import db
-from app.utils.crypto_fields import encrypt_field, decrypt_field, get_active_enc_version
 
 class Account(db.Model):
     __tablename__ = 'accounts'
@@ -11,13 +10,9 @@ class Account(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     account_type = db.Column(db.String(50), nullable=False)  # 'checking', 'savings', 'investment', 'debt'
-    balance_enc = db.Column(db.LargeBinary, nullable=False)
-    enc_version = db.Column(db.SmallInteger, default=get_active_enc_version)
+    balance = db.Column(db.Numeric(precision=15, scale=2), nullable=False, default=0.0)
     bank_name = db.Column(db.String(100))
-    # Deprecated sensitive field: previously stored full account numbers.
-    # Now unused and should remain NULL. Plan: create migration to DROP COLUMN accounts.account_number.
-    # Kept only so existing databases still map; application code no longer reads/writes it.
-    account_number = db.Column(db.String(50))  # DO NOT USE
+    account_number = db.Column(db.String(50))  # Campo legacy, puede ser removido en futuras migraciones
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -63,9 +58,9 @@ class Account(db.Model):
         monthly_balance = 0.0
         for transaction in transactions:
             if transaction.transaction_type == 'income':
-                monthly_balance += transaction.amount
+                monthly_balance += float(transaction.amount)
             else:
-                monthly_balance -= transaction.amount
+                monthly_balance -= float(transaction.amount)
                 
         return monthly_balance
     
@@ -81,17 +76,17 @@ class Account(db.Model):
             # Para deudas, los pagos (expense) reducen la deuda
             for transaction in transactions:
                 if transaction.transaction_type == 'expense':
-                    calculated_balance -= transaction.amount  # Pagos reducen la deuda
+                    calculated_balance -= float(transaction.amount)  # Pagos reducen la deuda
                 elif transaction.transaction_type == 'income':
-                    calculated_balance += transaction.amount  # Cargos aumentan la deuda
+                    calculated_balance += float(transaction.amount)  # Cargos aumentan la deuda
         else:
             # Para cuentas normales, lógica tradicional
             calculated_balance = 0.0
             for transaction in transactions:
                 if transaction.transaction_type == 'income':
-                    calculated_balance += transaction.amount
+                    calculated_balance += float(transaction.amount)
                 else:  # expense or transfer
-                    calculated_balance -= transaction.amount
+                    calculated_balance -= float(transaction.amount)
         return calculated_balance
     
     def update_balance(self):
@@ -128,17 +123,27 @@ class Account(db.Model):
         return abs(self.balance) if self.balance < 0 else self.balance
     
     def calculate_monthly_interest(self):
-        """Calcular interés mensual para cuentas de deuda"""
+        """Calcular interés mensual para cuentas de deuda
+        
+        Usa cálculo preciso de interés compuesto:
+        - Convierte APR (tasa anual) a tasa diaria
+        - Asume mes de 30 días para simplificación
+        """
         if not self.is_debt_account or not self.interest_rate:
-            return 0.0
+            return Decimal('0.00')
 
         # Para deudas, el balance representa lo que se debe (valor positivo). Si está en 0 o menos, no hay interés.
-        current_debt = max(float(self.balance), 0.0)
+        current_debt = max(Decimal(str(self.balance)), Decimal('0'))
         if current_debt <= 0:
-            return 0.0
+            return Decimal('0.00')
 
-        monthly_rate = self.interest_rate / 100 / 12  # % anual -> decimal mensual
-        return current_debt * monthly_rate
+        # Convertir tasa anual (APR) a tasa mensual efectiva
+        # Fórmula: tasa_mensual = (1 + APR)^(1/12) - 1
+        # Para simplicidad inicial, usamos: tasa_mensual = APR / 12
+        monthly_rate = Decimal(str(self.interest_rate)) / Decimal('100') / Decimal('12')
+        interest = (current_debt * monthly_rate).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        
+        return float(interest)
     
     def apply_monthly_interest(self):
         """Aplicar interés mensual y crear transacción automática"""
@@ -179,7 +184,7 @@ class Account(db.Model):
             return []
         
         projections = []
-        current_balance = abs(self.balance)  # Convertir a positivo para cálculos
+        current_balance = abs(float(self.balance))  # Convertir a positivo y float para cálculos
         monthly_rate = self.interest_rate / 100 / 12
         
         for month in range(1, months + 1):
@@ -253,7 +258,7 @@ class Account(db.Model):
         
         # Calcular interés del período
         period_rate = self.interest_rate / 100 / periods_per_year
-        interest_amount = self.balance * period_rate
+        interest_amount = float(self.balance) * period_rate
         
         return interest_amount
     
@@ -342,7 +347,7 @@ class Account(db.Model):
                (self.compound_frequency == 'quarterly' and month % 3 == 0) or \
                (self.compound_frequency == 'annually' and month % 12 == 0):
                 
-                interest = current_balance * period_rate
+                interest = float(current_balance) * period_rate
                 current_balance += interest
             else:
                 interest = 0
@@ -382,19 +387,3 @@ class Account(db.Model):
     def __repr__(self):
         return f'<Account {self.name}>'
 
-    # ---- Accesores cifrados ----
-    @property
-    def balance(self) -> float:
-        txt = decrypt_field(self.balance_enc, 'account_balance', self.enc_version)
-        if txt is None:
-            return 0.0
-        return float(Decimal(txt))
-
-    @balance.setter
-    def balance(self, value: float | int | str):
-        if value is None:
-            raise ValueError('balance no puede ser None')
-        if not self.enc_version:
-            self.enc_version = get_active_enc_version()
-        dec = Decimal(str(value)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-        self.balance_enc = encrypt_field(str(dec), 'account_balance', self.enc_version)

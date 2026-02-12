@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Eliminar Todos los Datos - Finanzas Personales{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Eliminar Todos los Datos
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-warning me-2"></i>
+                            ¡ADVERTENCIA! Esta acción es irreversible
+                        </h5>
+                        <hr>
+                        <p class="mb-0">Esta acción eliminará PERMANENTEMENTE:</p>
+                        <ul class="mt-2">
+                            <li><strong>Todas tus cuentas bancarias</strong></li>
+                            <li><strong>Todas tus transacciones</strong></li>
+                            <li><strong>Todas tus tarjetas de crédito</strong></li>
+                            <li><strong>Todas tus cuentas de deuda</strong></li>
+                            <li><strong>Todos tus recordatorios</strong></li>
+                        </ul>
+                        <p class="mt-3 mb-0">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Tu cuenta de usuario permanecerá activa, pero sin ningún registro financiero.
+                        </p>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="text-danger">¿Estás completamente seguro?</h6>
+                        <p class="text-muted">
+                            No podrás recuperar tus datos después de esta acción. 
+                            Si solo quieres hacer una limpieza, considera exportar tus datos primero.
+                        </p>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('auth.delete_all_data') }}" 
+                          onsubmit="return confirmDeletion()">
+                        {{ csrf_token() }}
+                        <div class="mb-3">
+                            <label for="confirm_password" class="form-label">
+                                <strong>Ingresa tu contraseña para confirmar:</strong>
+                            </label>
+                            <input type="password" class="form-control" id="confirm_password" 
+                                   name="confirm_password" required
+                                   placeholder="Tu contraseña actual">
+                            <div class="form-text">
+                                Por seguridad, necesitamos verificar tu identidad.
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg">
+                                <i class="fas fa-trash-alt me-2"></i>
+                                Sí, Eliminar Todos Mis Datos
+                            </button>
+                            <a href="{{ url_for('auth.profile') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>
+                                Cancelar y Volver al Perfil
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Esta acción requiere autenticación y no puede deshacerse
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDeletion() {
+    const confirmation = confirm(
+        '⚠️ ÚLTIMA CONFIRMACIÓN ⚠️\n\n' +
+        '¿Estás ABSOLUTAMENTE SEGURO que deseas eliminar TODOS tus datos?\n\n' +
+        'Esta acción:\n' +
+        '• NO puede deshacerse\n' +
+        '• Eliminará TODOS tus registros financieros\n' +
+        '• Es PERMANENTE\n\n' +
+        'Haz clic en "Aceptar" solo si estás completamente seguro.'
+    );
+    return confirmation;
+}
+</script>
+{% endblock %}
